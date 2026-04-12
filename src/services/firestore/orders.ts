@@ -53,15 +53,16 @@ export const createOrder = async (shopId: string, data: Omit<Order, 'uuid' | 'cr
   const uuid = uuidv7();
   const now = new Date().toISOString();
   const order: Order = { ...data, uuid, createdAt: now, updatedAt: now, deleted: false };
-  await setDoc(doc(db, 'shops', shopId, 'orders', uuid), order);
+  const firestoreData = Object.fromEntries(Object.entries(order).filter(([, v]) => v !== undefined));
+  await setDoc(doc(db, 'shops', shopId, 'orders', uuid), firestoreData);
   return order;
 };
 
 export const updateOrder = async (shopId: string, uuid: string, data: Partial<Order>): Promise<void> => {
-  await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), {
-    ...data,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload = Object.fromEntries(
+    Object.entries({ ...data, updatedAt: new Date().toISOString() }).filter(([, v]) => v !== undefined),
+  );
+  await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
 };
 
 export const deleteOrder = async (shopId: string, uuid: string): Promise<void> => {

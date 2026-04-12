@@ -92,7 +92,11 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
               if (showCustomerList) setCustomerSearch(e.target.value);
               else { setCustomerName(e.target.value); setCustomerId(''); }
             }}
-            onFocus={() => setShowCustomerList(true)}
+            onFocus={() => {
+              setCustomerSearch(customerName);
+              setShowCustomerList(true);
+            }}
+            onBlur={() => setTimeout(() => setShowCustomerList(false), 150)}
           />
           {showCustomerList && (
             <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface shadow-lg">
@@ -112,7 +116,13 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
               )}
               <button
                 type="button"
-                onMouseDown={() => { setShowCustomerList(false); }}
+                onMouseDown={() => {
+                  if (customerSearch.trim()) {
+                    setCustomerName(customerSearch.trim());
+                    setCustomerId('');
+                  }
+                  setShowCustomerList(false);
+                }}
                 className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-sm font-medium text-primary"
               >
                 Dùng tên vừa nhập
