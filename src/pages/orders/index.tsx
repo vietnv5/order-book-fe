@@ -53,9 +53,10 @@ export default function OrdersPage() {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
+            style={activeTab === tab.key ? { background: 'linear-gradient(135deg, #6366F1 0%, #A855F7 100%)', boxShadow: '0 2px 8px rgba(139,92,246,.35)' } : undefined}
             className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all ${
               activeTab === tab.key
-                ? 'bg-primary text-white shadow-sm'
+                ? 'text-white'
                 : 'bg-surface text-muted shadow-sm'
             }`}
           >

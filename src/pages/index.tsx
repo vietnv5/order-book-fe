@@ -43,10 +43,22 @@ export default function DashboardPage() {
     .reduce((sum, o) => sum + (o.totalAmount ?? 0), 0);
 
   const statCards = [
-    { label: 'Đơn hôm nay', value: todayCount, icon: '📦', color: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Chờ xử lý', value: pendingCount, icon: '⏳', color: 'bg-amber-50 text-amber-600' },
-    { label: 'Đang giao', value: shippingCount, icon: '🚚', color: 'bg-blue-50 text-blue-600' },
-    { label: 'Doanh thu HN', value: formatCurrency(todayRevenue), icon: '💰', color: 'bg-emerald-50 text-emerald-600' },
+    {
+      label: 'Đơn hôm nay', value: todayCount, color: 'bg-indigo-50 text-indigo-600',
+      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
+    },
+    {
+      label: 'Chờ xử lý', value: pendingCount, color: 'bg-amber-50 text-amber-600',
+      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
+    {
+      label: 'Đang giao', value: shippingCount, color: 'bg-blue-50 text-blue-600',
+      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>,
+    },
+    {
+      label: 'Doanh thu HN', value: formatCurrency(todayRevenue), color: 'bg-emerald-50 text-emerald-600',
+      icon: <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
   ];
 
   return (
@@ -103,7 +115,7 @@ export default function DashboardPage() {
         <div className="mb-5 grid grid-cols-2 gap-3">
           {statCards.map((card) => (
             <div key={card.label} className="rounded-2xl bg-surface p-4 shadow-card">
-              <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl text-lg ${card.color}`}>
+              <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl ${card.color}`}>
                 {card.icon}
               </div>
               <p className="text-2xl font-bold text-text">{card.value}</p>
@@ -124,7 +136,7 @@ export default function DashboardPage() {
           <SkeletonList count={3} />
         ) : orders.length === 0 ? (
           <div className="rounded-2xl bg-surface p-8 text-center shadow-card">
-            <p className="text-2xl mb-2">📋</p>
+            <svg className="mx-auto mb-2 h-10 w-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
             <p className="text-sm text-muted">Chưa có đơn hàng nào</p>
             <button onClick={() => navigate('/orders/new')} className="btn-primary mx-auto mt-4 w-auto px-6">
               Tạo đơn đầu tiên
