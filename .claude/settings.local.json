@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python scripts/search.py \"vietnamese ecommerce order management mobile pwa operational\" --design-system -p \"Order Book\" -f markdown)",
+      "Bash(py --version)",
+      "Bash(python \"C:\\\\Users\\\\VietNV\\\\.claude\\\\plugins\\\\cache\\\\ui-ux-pro-max-skill\\\\ui-ux-pro-max\\\\2.5.0\\\\.claude\\\\skills\\\\ui-ux-pro-max\\\\scripts\\\\search.py\" \"ecommerce order management vibrant colorful mobile\" --design-system -p \"Order Book\" -f markdown)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

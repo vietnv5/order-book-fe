@@ -1,19 +1,77 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes } from 'react-router-dom';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
-import IndexPage from "@/pages/index";
-import DocsPage from "@/pages/docs";
-import PricingPage from "@/pages/pricing";
-import BlogPage from "@/pages/blog";
-import AboutPage from "@/pages/about";
+import LoginPage from '@/pages/login';
+import SetupPage from '@/pages/setup';
+import DashboardPage from '@/pages/index';
+import OrdersPage from '@/pages/orders/index';
+import NewOrderPage from '@/pages/orders/new';
+import OrderDetailPage from '@/pages/orders/detail';
+import CustomersPage from '@/pages/customers/index';
+import ProductsPage from '@/pages/products/index';
+import ShippersPage from '@/pages/shippers/index';
 
 function App() {
   return (
     <Routes>
-      <Route element={<IndexPage />} path="/" />
-      <Route element={<DocsPage />} path="/docs" />
-      <Route element={<PricingPage />} path="/pricing" />
-      <Route element={<BlogPage />} path="/blog" />
-      <Route element={<AboutPage />} path="/about" />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/setup" element={<SetupPage />} />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders"
+        element={
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders/new"
+        element={
+          <ProtectedRoute>
+            <NewOrderPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders/:uuid"
+        element={
+          <ProtectedRoute>
+            <OrderDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/customers"
+        element={
+          <ProtectedRoute>
+            <CustomersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shippers"
+        element={
+          <ProtectedRoute>
+            <ShippersPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
