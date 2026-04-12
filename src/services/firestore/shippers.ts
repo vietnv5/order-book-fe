@@ -1,5 +1,5 @@
 import {
-  query, where, orderBy, setDoc, updateDoc, doc, onSnapshot, Unsubscribe,
+  query, orderBy, setDoc, updateDoc, doc, onSnapshot, Unsubscribe,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
@@ -12,11 +12,10 @@ export const subscribeShippers = (
 ): Unsubscribe => {
   const q = query(
     getShopCollection(shopId, 'shippers'),
-    where('deleted', '!=', true),
     orderBy('name', 'asc'),
   );
   return onSnapshot(q, (snap) =>
-    callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Shipper)),
+    callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Shipper).filter((s) => !s.deleted)),
   );
 };
 

@@ -1,6 +1,5 @@
 import {
   query,
-  where,
   orderBy,
   getDocs,
   setDoc,
@@ -20,19 +19,24 @@ export const subscribeCustomers = (
 ): Unsubscribe => {
   const q = query(
     getShopCollection(shopId, 'customers'),
-    where('deleted', '!=', true),
     orderBy('name', 'asc'),
   );
   return onSnapshot(q, (snap) =>
-    callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Customer)),
+    callback(
+      snap.docs
+        .map((d) => ({ uuid: d.id, ...d.data() }) as Customer)
+        .filter((c) => !c.deleted),
+    ),
   );
 };
 
 export const getCustomers = async (shopId: string): Promise<Customer[]> => {
   const snap = await getDocs(
-    query(getShopCollection(shopId, 'customers'), where('deleted', '!=', true), orderBy('name', 'asc')),
+    query(getShopCollection(shopId, 'customers'), orderBy('name', 'asc')),
   );
-  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Customer);
+  return snap.docs
+    .map((d) => ({ uuid: d.id, ...d.data() }) as Customer)
+    .filter((c) => !c.deleted);
 };
 
 export const createCustomer = async (shopId: string, data: Omit<Customer, 'uuid' | 'createdAt'>): Promise<Customer> => {

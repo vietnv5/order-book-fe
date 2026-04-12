@@ -23,7 +23,6 @@ export const subscribeOrders = (
 ): Unsubscribe => {
   let q = query(
     getShopCollection(shopId, 'orders'),
-    where('deleted', '!=', true),
     orderBy('createdAt', 'desc'),
     limit(100),
   );
@@ -31,13 +30,16 @@ export const subscribeOrders = (
     q = query(
       getShopCollection(shopId, 'orders'),
       where('deliveryStatus', '==', status),
-      where('deleted', '!=', true),
       orderBy('createdAt', 'desc'),
       limit(100),
     );
   }
   return onSnapshot(q, (snap) =>
-    callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Order)),
+    callback(
+      snap.docs
+        .map((d) => ({ uuid: d.id, ...d.data() }) as Order)
+        .filter((o) => !o.deleted),
+    ),
   );
 };
 
@@ -71,7 +73,9 @@ export const deleteOrder = async (shopId: string, uuid: string): Promise<void> =
 
 export const getOrdersOnce = async (shopId: string): Promise<Order[]> => {
   const snap = await getDocs(
-    query(getShopCollection(shopId, 'orders'), where('deleted', '!=', true), orderBy('createdAt', 'desc'), limit(10)),
+    query(getShopCollection(shopId, 'orders'), orderBy('createdAt', 'desc'), limit(20)),
   );
-  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Order);
+  return snap.docs
+    .map((d) => ({ uuid: d.id, ...d.data() }) as Order)
+    .filter((o) => !o.deleted);
 };

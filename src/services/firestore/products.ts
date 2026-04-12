@@ -1,5 +1,5 @@
 import {
-  query, where, orderBy, getDocs, setDoc, updateDoc, doc, onSnapshot, Unsubscribe,
+  query, orderBy, getDocs, setDoc, updateDoc, doc, onSnapshot, Unsubscribe,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
@@ -12,19 +12,24 @@ export const subscribeProducts = (
 ): Unsubscribe => {
   const q = query(
     getShopCollection(shopId, 'products'),
-    where('deleted', '!=', true),
     orderBy('name', 'asc'),
   );
   return onSnapshot(q, (snap) =>
-    callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Product)),
+    callback(
+      snap.docs
+        .map((d) => ({ uuid: d.id, ...d.data() }) as Product)
+        .filter((p) => !p.deleted),
+    ),
   );
 };
 
 export const getProducts = async (shopId: string): Promise<Product[]> => {
   const snap = await getDocs(
-    query(getShopCollection(shopId, 'products'), where('deleted', '!=', true), orderBy('name', 'asc')),
+    query(getShopCollection(shopId, 'products'), orderBy('name', 'asc')),
   );
-  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Product);
+  return snap.docs
+    .map((d) => ({ uuid: d.id, ...d.data() }) as Product)
+    .filter((p) => !p.deleted);
 };
 
 export const createProduct = async (shopId: string, data: Omit<Product, 'uuid' | 'createdAt'>): Promise<Product> => {

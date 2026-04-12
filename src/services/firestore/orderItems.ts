@@ -15,10 +15,9 @@ export const getOrderItems = async (shopId: string, orderId: string): Promise<Or
     query(
       getShopCollection(shopId, 'order_items'),
       where('orderId', '==', orderId),
-      where('deleted', '!=', true),
     ),
   );
-  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as OrderItem);
+  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as OrderItem).filter((i) => !i.deleted);
 };
 
 export const saveOrderItems = async (
