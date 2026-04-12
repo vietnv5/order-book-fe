@@ -8,7 +8,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { OrderItem } from '@/types';
-import { getShopCollection } from './base';
+import { getShopCollection, stripUndefined } from './base';
 
 export const getOrderItems = async (shopId: string, orderId: string): Promise<OrderItem[]> => {
   const snap = await getDocs(
@@ -40,7 +40,7 @@ export const saveOrderItems = async (
   for (const item of items) {
     const uuid = uuidv7();
     const orderItem: OrderItem = { ...item, uuid, orderId, deleted: false };
-    batch.set(doc(db, 'shops', shopId, 'order_items', uuid), orderItem);
+    batch.set(doc(db, 'shops', shopId, 'order_items', uuid), stripUndefined(orderItem as unknown as Record<string, unknown>));
     saved.push(orderItem);
   }
 

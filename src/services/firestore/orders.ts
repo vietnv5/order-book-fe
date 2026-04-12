@@ -14,7 +14,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Order, DeliveryStatus } from '@/types';
-import { getShopCollection } from './base';
+import { getShopCollection, stripUndefined } from './base';
 
 export const subscribeOrders = (
   shopId: string,
@@ -53,15 +53,12 @@ export const createOrder = async (shopId: string, data: Omit<Order, 'uuid' | 'cr
   const uuid = uuidv7();
   const now = new Date().toISOString();
   const order: Order = { ...data, uuid, createdAt: now, updatedAt: now, deleted: false };
-  const firestoreData = Object.fromEntries(Object.entries(order).filter(([, v]) => v !== undefined));
-  await setDoc(doc(db, 'shops', shopId, 'orders', uuid), firestoreData);
+  await setDoc(doc(db, 'shops', shopId, 'orders', uuid), stripUndefined(order as unknown as Record<string, unknown>));
   return order;
 };
 
 export const updateOrder = async (shopId: string, uuid: string, data: Partial<Order>): Promise<void> => {
-  const payload = Object.fromEntries(
-    Object.entries({ ...data, updatedAt: new Date().toISOString() }).filter(([, v]) => v !== undefined),
-  );
+  const payload = stripUndefined({ ...data, updatedAt: new Date().toISOString() } as Record<string, unknown>);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
 };
 

@@ -11,7 +11,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Customer } from '@/types';
-import { getShopCollection } from './base';
+import { getShopCollection, stripUndefined } from './base';
 
 export const subscribeCustomers = (
   shopId: string,
@@ -43,14 +43,15 @@ export const createCustomer = async (shopId: string, data: Omit<Customer, 'uuid'
   const uuid = uuidv7();
   const now = new Date().toISOString();
   const customer: Customer = { ...data, uuid, createdAt: now, updatedAt: now, deleted: false };
-  await setDoc(doc(db, 'shops', shopId, 'customers', uuid), customer);
+  await setDoc(doc(db, 'shops', shopId, 'customers', uuid), stripUndefined(customer as unknown as Record<string, unknown>));
   return customer;
 };
 
 export const updateCustomer = async (shopId: string, uuid: string, data: Partial<Customer>): Promise<void> => {
-  await updateDoc(doc(db, 'shops', shopId, 'customers', uuid), {
-    ...data, updatedAt: new Date().toISOString(),
-  });
+  await updateDoc(
+    doc(db, 'shops', shopId, 'customers', uuid),
+    stripUndefined({ ...data, updatedAt: new Date().toISOString() } as Record<string, unknown>),
+  );
 };
 
 export const deleteCustomer = async (shopId: string, uuid: string): Promise<void> => {

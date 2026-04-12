@@ -4,7 +4,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Shipper } from '@/types';
-import { getShopCollection } from './base';
+import { getShopCollection, stripUndefined } from './base';
 
 export const subscribeShippers = (
   shopId: string,
@@ -23,14 +23,15 @@ export const createShipper = async (shopId: string, data: Omit<Shipper, 'uuid' |
   const uuid = uuidv7();
   const now = new Date().toISOString();
   const shipper: Shipper = { ...data, uuid, createdAt: now, updatedAt: now, deleted: false };
-  await setDoc(doc(db, 'shops', shopId, 'shippers', uuid), shipper);
+  await setDoc(doc(db, 'shops', shopId, 'shippers', uuid), stripUndefined(shipper as unknown as Record<string, unknown>));
   return shipper;
 };
 
 export const updateShipper = async (shopId: string, uuid: string, data: Partial<Shipper>): Promise<void> => {
-  await updateDoc(doc(db, 'shops', shopId, 'shippers', uuid), {
-    ...data, updatedAt: new Date().toISOString(),
-  });
+  await updateDoc(
+    doc(db, 'shops', shopId, 'shippers', uuid),
+    stripUndefined({ ...data, updatedAt: new Date().toISOString() } as Record<string, unknown>),
+  );
 };
 
 export const deleteShipper = async (shopId: string, uuid: string): Promise<void> => {
