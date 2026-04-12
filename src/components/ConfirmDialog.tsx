@@ -14,7 +14,7 @@ export default function ConfirmDialog({
 }: Props) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center px-6">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
       <div className="relative w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
         <h3 className="text-base font-semibold text-text">{title}</h3>

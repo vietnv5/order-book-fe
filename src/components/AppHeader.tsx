@@ -10,7 +10,8 @@ export default function AppHeader({ title, showBack = false, rightAction }: Prop
   const navigate = useNavigate();
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center border-b border-border bg-surface px-4">
+    <header className="fixed left-0 right-0 top-0 z-40 relative flex h-14 items-center bg-surface px-4">
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400" />
       {showBack && (
         <button
           onClick={() => navigate(-1)}

@@ -2,7 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import StatusBadge from '@/components/StatusBadge';
-import { Order } from '@/types';
+import { Order, DeliveryStatus } from '@/types';
+
+const statusStrip: Record<DeliveryStatus, string> = {
+  pending:   'from-amber-400 to-orange-400',
+  assigned:  'from-indigo-500 to-violet-500',
+  shipping:  'from-blue-400 to-cyan-400',
+  completed: 'from-emerald-400 to-teal-400',
+};
 
 interface Props {
   order: Order;
@@ -14,8 +21,9 @@ export default function OrderCard({ order }: Props) {
   return (
     <button
       onClick={() => navigate(`/orders/${order.uuid}`)}
-      className="flex w-full items-start justify-between rounded-2xl bg-surface p-4 shadow-card text-left transition-all active:scale-[0.98]"
+      className="relative overflow-hidden flex w-full items-start justify-between rounded-2xl bg-surface p-4 pl-5 shadow-card text-left transition-all active:scale-[0.98]"
     >
+      <div className={`pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b ${statusStrip[order.deliveryStatus]}`} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-semibold text-text truncate">{order.customerName}</p>

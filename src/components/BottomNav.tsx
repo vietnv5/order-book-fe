@@ -44,7 +44,8 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around border-t border-border bg-surface pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 relative flex h-16 items-center justify-around bg-surface pb-safe">
+      <div className="pointer-events-none absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400" />
       {tabs.map((tab, i) => {
         if (!tab) {
           // FAB center button
@@ -52,7 +53,8 @@ export default function BottomNav() {
             <button
               key="fab"
               onClick={() => navigate('/orders/new')}
-              className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-primary shadow-lg transition-all active:scale-90"
+              className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full transition-all active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #6366F1 0%, #A855F7 100%)', boxShadow: '0 4px 20px rgba(139,92,246,.50)' }}
               aria-label="Tạo đơn mới"
             >
               <svg className="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

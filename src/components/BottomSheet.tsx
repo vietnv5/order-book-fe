@@ -20,7 +20,7 @@ export default function BottomSheet({ open, onClose, title, children, fullHeight
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
       {/* Backdrop */}
       <div
         ref={overlayRef}
