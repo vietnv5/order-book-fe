@@ -44,7 +44,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 relative flex h-16 items-center justify-around bg-surface pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-16 items-center justify-around bg-surface pb-safe">
       <div className="pointer-events-none absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400" />
       {tabs.map((tab, i) => {
         if (!tab) {

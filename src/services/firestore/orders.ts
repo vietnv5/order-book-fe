@@ -34,12 +34,10 @@ export const subscribeOrders = (
       limit(100),
     );
   }
-  return onSnapshot(q, (snap) =>
-    callback(
-      snap.docs
-        .map((d) => ({ uuid: d.id, ...d.data() }) as Order)
-        .filter((o) => !o.deleted),
-    ),
+  return onSnapshot(
+    q,
+    (snap) => callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Order).filter((o) => !o.deleted)),
+    (err) => { console.error('subscribeOrders:', err); callback([]); },
   );
 };
 
