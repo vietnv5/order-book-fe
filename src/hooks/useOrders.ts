@@ -19,6 +19,5 @@ export const useOrders = (status: DeliveryStatus | 'all' = 'all') => {
   }, [shopId]);
 
   const orders = status === 'all' ? allOrders : allOrders.filter((o) => o.deliveryStatus === status);
-  console.log('[useOrders]', { status, allCount: allOrders.length, filteredCount: orders.length, sample: allOrders[0]?.deliveryStatus });
   return { orders, loading };
 };

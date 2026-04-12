@@ -26,7 +26,17 @@ export const subscribeOrders = (
   );
   return onSnapshot(
     q,
-    (snap) => callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Order).filter((o) => !o.deleted)),
+    (snap) => {
+      const orders = snap.docs
+        .map((d) => ({ uuid: d.id, ...d.data() }) as Order)
+        .filter((o) => !o.deleted)
+        .sort((a, b) => {
+          const da = a.statAt ?? a.createdAt ?? '';
+          const db = b.statAt ?? b.createdAt ?? '';
+          return db.localeCompare(da);
+        });
+      callback(orders);
+    },
     (err) => { console.error('subscribeOrders:', err); callback([]); },
   );
 };
@@ -40,7 +50,7 @@ export const getOrder = async (shopId: string, uuid: string): Promise<Order | nu
 export const createOrder = async (shopId: string, data: Omit<Order, 'uuid' | 'createdAt'>): Promise<Order> => {
   const uuid = uuidv7();
   const now = new Date().toISOString();
-  const order: Order = { ...data, uuid, createdAt: now, updatedAt: now, deleted: false };
+  const order: Order = { ...data, uuid, createdAt: now, updatedAt: now, statAt: data.statAt ?? now, deleted: false };
   await setDoc(doc(db, 'shops', shopId, 'orders', uuid), stripUndefined(order as unknown as Record<string, unknown>));
   return order;
 };
