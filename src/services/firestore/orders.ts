@@ -1,6 +1,5 @@
 import {
   query,
-  where,
   orderBy,
   limit,
   onSnapshot,
@@ -13,27 +12,18 @@ import {
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
-import { Order, DeliveryStatus } from '@/types';
+import { Order } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
 
 export const subscribeOrders = (
   shopId: string,
-  status: DeliveryStatus | 'all',
   callback: (orders: Order[]) => void,
 ): Unsubscribe => {
-  let q = query(
+  const q = query(
     getShopCollection(shopId, 'orders'),
     orderBy('createdAt', 'desc'),
-    limit(100),
+    limit(200),
   );
-  if (status !== 'all') {
-    q = query(
-      getShopCollection(shopId, 'orders'),
-      where('deliveryStatus', '==', status),
-      orderBy('createdAt', 'desc'),
-      limit(100),
-    );
-  }
   return onSnapshot(
     q,
     (snap) => callback(snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as Order).filter((o) => !o.deleted)),
