@@ -51,7 +51,11 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
   const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSubmit = async () => {
-    if (!customerName.trim()) { setError('Vui lòng nhập tên khách hàng'); return; }
+    if (!customerName.trim()) {
+      setError('Vui lòng nhập tên khách hàng');
+      document.getElementById('customer-name')?.focus();
+      return;
+    }
     setError(''); setLoading(true);
     try {
       await onSubmit({
@@ -82,15 +86,28 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
     <div className="flex flex-col gap-4">
       {/* Customer */}
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-text">Khách hàng <span className="text-danger">*</span></label>
+        <label htmlFor="customer-name" className="mb-1.5 block text-sm font-medium text-text">
+          Khách hàng <span className="text-danger" aria-hidden="true">*</span>
+        </label>
         <div className="relative">
           <input
+            id="customer-name"
+            required
+            aria-required="true"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'customer-error' : undefined}
             className="input-field"
             placeholder="Tên khách hàng hoặc tìm trong danh sách..."
             value={showCustomerList ? customerSearch : customerName}
             onChange={(e) => {
-              if (showCustomerList) setCustomerSearch(e.target.value);
-              else { setCustomerName(e.target.value); setCustomerId(''); }
+              const val = e.target.value;
+              setCustomerId('');
+              if (showCustomerList) {
+                setCustomerSearch(val);
+                setCustomerName(val);
+              } else {
+                setCustomerName(val);
+              }
             }}
             onFocus={() => {
               setCustomerSearch(customerName);
@@ -99,13 +116,19 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
             onBlur={() => setTimeout(() => setShowCustomerList(false), 150)}
           />
           {showCustomerList && (
-            <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface shadow-lg">
+            <div
+              role="listbox"
+              aria-label="Danh sách khách hàng"
+              className="absolute left-0 right-0 top-full z-30 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border bg-surface shadow-lg"
+            >
               {filteredCustomers.slice(0, 8).map((c) => (
                 <button
                   key={c.uuid}
                   type="button"
+                  role="option"
+                  aria-selected={c.uuid === customerId}
                   onMouseDown={() => handleCustomerSelect(c)}
-                  className="flex w-full flex-col px-4 py-2.5 text-left hover:bg-gray-50 border-b border-border last:border-0"
+                  className="flex w-full flex-col px-4 py-2.5 text-left hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-700 dark:active:bg-slate-600 border-b border-border last:border-0"
                 >
                   <span className="text-sm font-medium text-text">{c.name}</span>
                   {c.sdt && <span className="text-xs text-muted">{c.sdt}</span>}
@@ -123,37 +146,63 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
                   }
                   setShowCustomerList(false);
                 }}
-                className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-sm font-medium text-primary"
+                className="flex w-full items-center gap-2 border-t border-border px-4 py-2.5 text-sm font-medium text-primary hover:bg-slate-50 active:bg-slate-100 dark:hover:bg-slate-700 dark:active:bg-slate-600"
               >
                 Dùng tên vừa nhập
               </button>
             </div>
           )}
         </div>
+        {error && (
+          <p id="customer-error" role="alert" className="mt-1 text-xs text-danger">
+            {error}
+          </p>
+        )}
       </div>
 
-      {/* Phone & Address */}
+      {/* Phone & Date */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Số điện thoại</label>
-          <input className="input-field" placeholder="0912..." value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+          <label htmlFor="customer-phone" className="mb-1.5 block text-sm font-medium text-text">Số điện thoại</label>
+          <input
+            id="customer-phone"
+            type="tel"
+            autoComplete="tel"
+            className="input-field"
+            placeholder="0912..."
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+          />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Ngày đặt</label>
-          <input type="date" className="input-field" value={statAt} onChange={(e) => setStatAt(e.target.value)} />
+          <label htmlFor="stat-at" className="mb-1.5 block text-sm font-medium text-text">Ngày đặt</label>
+          <input
+            id="stat-at"
+            type="date"
+            className="input-field"
+            value={statAt}
+            onChange={(e) => setStatAt(e.target.value)}
+          />
         </div>
       </div>
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-text">Địa chỉ giao</label>
-        <input className="input-field" placeholder="Địa chỉ giao hàng..." value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} />
+        <label htmlFor="customer-address" className="mb-1.5 block text-sm font-medium text-text">Địa chỉ giao</label>
+        <input
+          id="customer-address"
+          autoComplete="street-address"
+          className="input-field"
+          placeholder="Địa chỉ giao hàng..."
+          value={customerAddress}
+          onChange={(e) => setCustomerAddress(e.target.value)}
+        />
       </div>
 
       {/* Order Items */}
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label className="text-sm font-medium text-text">Sản phẩm</label>
-          <button type="button" onClick={addItem} className="flex items-center gap-1 text-sm font-medium text-primary">
+          <button type="button" onClick={addItem} className="flex items-center gap-1 text-sm font-medium text-primary touch-action-manipulation">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -165,7 +214,7 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
             <OrderItemRow key={i} item={item} index={i} products={products} onChange={updateItem} onRemove={removeItem} />
           ))}
           {items.length === 0 && (
-            <button type="button" onClick={addItem} className="rounded-xl border-2 border-dashed border-border py-4 text-sm text-muted w-full">
+            <button type="button" onClick={addItem} className="rounded-xl border-2 border-dashed border-border py-4 text-sm text-muted w-full active:bg-slate-50 dark:active:bg-slate-800">
               + Thêm sản phẩm
             </button>
           )}
@@ -180,23 +229,42 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
       {/* Delivery */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Trạng thái</label>
-          <select className="input-field" value={deliveryStatus} onChange={(e) => setDeliveryStatus(e.target.value as DeliveryStatus)}>
+          <label htmlFor="delivery-status" className="mb-1.5 block text-sm font-medium text-text">Trạng thái</label>
+          <select
+            id="delivery-status"
+            className="input-field"
+            value={deliveryStatus}
+            onChange={(e) => setDeliveryStatus(e.target.value as DeliveryStatus)}
+          >
             {(Object.entries(DELIVERY_STATUS_LABELS) as [DeliveryStatus, string][]).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Phí giao</label>
-          <input type="number" min="0" className="input-field" placeholder="0" value={deliveryFee} onChange={(e) => setDeliveryFee(e.target.value)} />
+          <label htmlFor="delivery-fee" className="mb-1.5 block text-sm font-medium text-text">Phí giao</label>
+          <input
+            id="delivery-fee"
+            type="number"
+            min="0"
+            inputMode="numeric"
+            className="input-field"
+            placeholder="0"
+            value={deliveryFee}
+            onChange={(e) => setDeliveryFee(e.target.value)}
+          />
         </div>
       </div>
 
       {shippers.length > 0 && (
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-text">Tài xế</label>
-          <select className="input-field" value={shipperId} onChange={(e) => setShipperId(e.target.value)}>
+          <label htmlFor="shipper" className="mb-1.5 block text-sm font-medium text-text">Tài xế</label>
+          <select
+            id="shipper"
+            className="input-field"
+            value={shipperId}
+            onChange={(e) => setShipperId(e.target.value)}
+          >
             <option value="">-- Chưa chọn --</option>
             {shippers.map((s) => <option key={s.uuid} value={s.uuid}>{s.name}</option>)}
           </select>
@@ -204,26 +272,42 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
       )}
 
       <div>
-        <label className="mb-1.5 block text-sm font-medium text-text">Ghi chú</label>
-        <textarea className="input-field resize-none" rows={2} placeholder="Ghi chú đơn hàng..." value={description} onChange={(e) => setDescription(e.target.value)} />
+        <label htmlFor="description" className="mb-1.5 block text-sm font-medium text-text">Ghi chú</label>
+        <textarea
+          id="description"
+          className="input-field resize-none"
+          rows={2}
+          placeholder="Ghi chú đơn hàng..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
       </div>
 
       {/* Paid toggle */}
-      <label className="flex items-center justify-between rounded-xl bg-surface px-4 py-3 shadow-card">
-        <span className="text-sm font-medium text-text">Đã thanh toán</span>
+      <label className="flex items-center justify-between rounded-xl bg-surface px-4 py-3 shadow-card cursor-pointer">
+        <span id="paid-label" className="text-sm font-medium text-text">Đã thanh toán</span>
         <button
           type="button"
+          role="switch"
+          aria-checked={paid}
+          aria-labelledby="paid-label"
           onClick={() => setPaid((v) => !v)}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${paid ? 'bg-success' : 'bg-gray-200'}`}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${paid ? 'bg-success' : 'bg-gray-200 dark:bg-slate-600'}`}
         >
           <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${paid ? 'translate-x-6' : 'translate-x-1'}`} />
         </button>
       </label>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
-
       <button onClick={handleSubmit} disabled={loading} className="btn-primary w-full">
-        {loading ? 'Đang lưu...' : submitLabel}
+        {loading ? (
+          <>
+            <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Đang lưu...
+          </>
+        ) : submitLabel}
       </button>
     </div>
   );

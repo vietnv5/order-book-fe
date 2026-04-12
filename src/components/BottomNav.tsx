@@ -71,7 +71,7 @@ export default function BottomNav() {
             {({ isActive }) => (
               <>
                 {tab.icon(isActive)}
-                <span className={`text-[10px] font-medium ${isActive ? 'text-primary' : 'text-muted'}`}>
+                <span className={`text-[11px] font-medium ${isActive ? 'text-primary' : 'text-muted'}`}>
                   {tab.label}
                 </span>
               </>

@@ -5,6 +5,14 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+@theme {
+  --color-primary: #4F46E5;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger:  #EF4444;
+  --color-info:    #3B82F6;
+}
+
 :root {
   --color-primary: #4F46E5;
   --color-primary-light: #EEF2FF;
@@ -39,6 +47,16 @@
 }
 
 * { -webkit-tap-highlight-color: transparent; }
+
+/* Global focus-visible ring for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+[role="switch"]:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 html, body { font-family: 'Inter', sans-serif; }
 
@@ -94,9 +112,14 @@ body {
   transition: opacity 0.15s, transform 0.1s;
   cursor: pointer;
   border: none;
+  touch-action: manipulation;
 }
 .btn-primary:active { transform: scale(0.97); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
 
 /* Secondary button */
 .btn-secondary {
@@ -114,8 +137,13 @@ body {
   font-weight: 500;
   transition: opacity 0.15s, transform 0.1s;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .btn-secondary:active { transform: scale(0.97); }
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
 
 /* Content area with bottom nav padding */
 .main-content {
