@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Shop } from '@/types';
-import { getShop, getMyShops } from '@/services/firestore/shops';
+import { getMyShops } from '@/services/firestore/shops';
 import { useAuth } from './AuthContext';
 
 interface ShopContextValue {
@@ -8,6 +8,7 @@ interface ShopContextValue {
   shopId: string | null;
   role: 'owner' | 'editor' | null;
   loading: boolean;
+  allShops: Shop[];
   refreshShop: () => Promise<void>;
   switchShop: (s: Shop) => void;
 }
@@ -17,6 +18,7 @@ const ShopContext = createContext<ShopContextValue>({
   shopId: null,
   role: null,
   loading: true,
+  allShops: [],
   refreshShop: async () => {},
   switchShop: () => {},
 });
@@ -26,26 +28,26 @@ export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
   const [shop, setShop] = useState<Shop | null>(null);
   const [role, setRole] = useState<'owner' | 'editor' | null>(null);
   const [loading, setLoading] = useState(true);
+  const [allShops, setAllShops] = useState<Shop[]>([]);
 
   const loadShop = async () => {
-    if (!user) { setShop(null); setLoading(false); return; }
+    if (!user) { setShop(null); setAllShops([]); setLoading(false); return; }
     setLoading(true);
     try {
-      // Try to load own shop first (user is owner)
-      const ownShop = await getShop(user.uid);
+      const myShops = await getMyShops(user.uid);
+      setAllShops(myShops);
+
+      // Prefer own shop, fallback to first joined shop
+      const ownShop = myShops.find((s) => s.ownerUid === user.uid) ?? null;
       if (ownShop) {
         setShop(ownShop);
         setRole('owner');
-        setLoading(false);
-        return;
-      }
-      // Try to find a shop the user has joined
-      const myShops = await getMyShops(user.uid);
-      if (myShops.length > 0) {
+      } else if (myShops.length > 0) {
         setShop(myShops[0]);
         setRole('editor');
       } else {
         setShop(null);
+        setRole(null);
       }
     } finally {
       setLoading(false);
@@ -61,7 +63,7 @@ export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <ShopContext.Provider
-      value={{ shop, shopId: shop?.shopId ?? null, role, loading, refreshShop: loadShop, switchShop }}
+      value={{ shop, shopId: shop?.shopId ?? null, role, loading, allShops, refreshShop: loadShop, switchShop }}
     >
       {children}
     </ShopContext.Provider>

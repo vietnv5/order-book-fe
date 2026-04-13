@@ -6,6 +6,7 @@ import DefaultLayout from '@/layouts/default';
 import AppHeader from '@/components/AppHeader';
 import SkeletonList from '@/components/SkeletonList';
 import StatusBadge from '@/components/StatusBadge';
+import ShopSwitcherSheet from '@/components/ShopSwitcherSheet';
 import { useShop } from '@/contexts/ShopContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOut } from '@/services/auth';
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showShopSwitcher, setShowShopSwitcher] = useState(false);
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [showDateFilter, setShowDateFilter] = useState(false);
@@ -104,18 +106,28 @@ export default function DashboardPage() {
             {showUserMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-                <div className="absolute right-0 top-11 z-50 w-52 rounded-2xl bg-surface p-2 shadow-xl">
+                <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl bg-surface p-2 shadow-xl">
                   <p className="px-3 py-2 text-xs text-muted truncate">{user?.email}</p>
                   <hr className="border-border my-1" />
                   <button
+                    onClick={() => { setShowShopSwitcher(true); setShowUserMenu(false); }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
+                  >
+                    <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    Chuyển / tham gia shop
+                  </button>
+                  <button
                     onClick={() => { navigate('/shippers'); setShowUserMenu(false); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text"
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
                   >
                     <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
                     </svg>
                     Quản lý tài xế
                   </button>
+                  <hr className="border-border my-1" />
                   <button
                     onClick={async () => { await signOut(); }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-danger"
@@ -277,6 +289,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      <ShopSwitcherSheet open={showShopSwitcher} onClose={() => setShowShopSwitcher(false)} />
     </DefaultLayout>
   );
 }
