@@ -3,7 +3,7 @@ import BottomSheet from './BottomSheet';
 import ConfirmDialog from './ConfirmDialog';
 import { useShop } from '@/contexts/ShopContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { joinShop, leaveShop, updateShopName } from '@/services/firestore/shops';
+import { createShop, joinShop, leaveShop, updateShopName } from '@/services/firestore/shops';
 import { Shop } from '@/types';
 
 interface Props {
@@ -16,6 +16,10 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
   const { user } = useAuth();
 
   const [showJoin, setShowJoin] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [joinId, setJoinId] = useState('');
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
@@ -30,6 +34,7 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
   const [leaveError, setLeaveError] = useState('');
 
   const isOwner = shop?.ownerUid === user?.uid;
+  const hasOwnedShop = allShops.some((s) => s.ownerUid === user?.uid);
 
   const handleSwitch = (s: Shop) => {
     switchShop(s);
@@ -60,6 +65,22 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
       setJoinError(err instanceof Error ? err.message : 'Mã shop không hợp lệ');
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!createName.trim() || !user || hasOwnedShop) return;
+    setCreateError('');
+    setCreating(true);
+    try {
+      await createShop(user.uid, createName.trim(), user.displayName, user.email, user.photoURL);
+      await refreshShop();
+      setCreateName('');
+      setShowCreate(false);
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : 'Không thể tạo shop');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -112,6 +133,9 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
   };
 
   const handleClose = () => {
+    setShowCreate(false);
+    setCreateName('');
+    setCreateError('');
     setShowJoin(false);
     setJoinId('');
     setJoinError('');
@@ -246,6 +270,55 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
 
         {leaveError && (
           <p className="mb-3 rounded-xl bg-red-50 px-4 py-2 text-sm text-danger dark:bg-red-900/20">{leaveError}</p>
+        )}
+
+        {!hasOwnedShop && (
+          <div className="mb-3 rounded-2xl bg-surface shadow-card overflow-hidden">
+            <button
+              onClick={() => setShowCreate((v) => !v)}
+              className="flex w-full items-center gap-3 p-4 text-left transition-all active:bg-gray-50 dark:active:bg-slate-700/50"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/30">
+                <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-text">Tạo shop của bạn</p>
+                <p className="text-xs text-muted">Bạn chưa sở hữu shop nào</p>
+              </div>
+              <svg
+                className={`h-5 w-5 text-muted transition-transform duration-200 ${showCreate ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showCreate && (
+              <div className="border-t border-border px-4 pb-4 pt-3">
+                <input
+                  autoFocus
+                  className="input-field"
+                  placeholder="VD: Shop Thời Trang ABC"
+                  value={createName}
+                  onChange={(e) => {
+                    setCreateName(e.target.value);
+                    setCreateError('');
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                />
+                {createError && <p className="mt-2 text-sm text-danger">{createError}</p>}
+                <button
+                  onClick={handleCreate}
+                  disabled={creating || !createName.trim()}
+                  className="btn-primary mt-3 w-full"
+                >
+                  {creating ? 'Đang tạo...' : 'Tạo shop'}
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Join new shop */}
