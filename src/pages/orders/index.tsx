@@ -7,6 +7,8 @@ import SkeletonList from '@/components/SkeletonList';
 import EmptyState from '@/components/EmptyState';
 import SearchBar from '@/components/SearchBar';
 import { useOrders } from '@/hooks/useOrders';
+import { useShop } from '@/contexts/ShopContext';
+import { updateOrder } from '@/services/firestore/orders';
 import { DeliveryStatus } from '@/types';
 
 const ALL_TABS: Array<{ key: DeliveryStatus | 'all'; label: string }> = [
@@ -19,12 +21,23 @@ const ALL_TABS: Array<{ key: DeliveryStatus | 'all'; label: string }> = [
 
 export default function OrdersPage() {
   const navigate = useNavigate();
+  const { shopId } = useShop();
   const [activeTab, setActiveTab] = useState<DeliveryStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showDateFilter, setShowDateFilter] = useState(false);
   const { orders, loading } = useOrders(activeTab);
+
+  const handleUpdateStatus = async (uuid: string, status: DeliveryStatus) => {
+    if (!shopId) return;
+    await updateOrder(shopId, uuid, { deliveryStatus: status });
+  };
+
+  const handleUpdatePaid = async (uuid: string, paid: boolean) => {
+    if (!shopId) return;
+    await updateOrder(shopId, uuid, { paid });
+  };
 
   const hasDateFilter = !!(dateFrom || dateTo);
 
@@ -176,7 +189,12 @@ export default function OrdersPage() {
         <div className="flex flex-col gap-3 px-4 pb-4">
           <p className="text-xs text-muted">{filtered.length} đơn hàng</p>
           {filtered.map((order) => (
-            <OrderCard key={order.uuid} order={order} />
+            <OrderCard
+              key={order.uuid}
+              order={order}
+              onUpdateStatus={handleUpdateStatus}
+              onUpdatePaid={handleUpdatePaid}
+            />
           ))}
         </div>
       )}
