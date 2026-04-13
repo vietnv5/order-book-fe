@@ -1,7 +1,9 @@
+import { ReactNode } from 'react';
+
 interface Props {
   open: boolean;
   title: string;
-  message: string;
+  message: ReactNode;
   confirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -18,7 +20,7 @@ export default function ConfirmDialog({
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
       <div className="relative w-full max-w-sm rounded-2xl bg-surface p-6 shadow-xl">
         <h3 className="text-base font-semibold text-text">{title}</h3>
-        <p className="mt-2 text-sm text-muted">{message}</p>
+        <div className="mt-2 text-sm text-muted">{message}</div>
         <div className="mt-5 flex gap-3">
           <button onClick={onCancel} className="btn-secondary flex-1">Hủy</button>
           <button

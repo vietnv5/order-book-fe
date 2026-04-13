@@ -2,6 +2,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  updateDoc,
   deleteDoc,
   collection,
   query,
@@ -100,4 +101,10 @@ export const leaveShop = async (shopId: string, userId: string): Promise<void> =
     throw new Error('Chủ shop không thể rời shop');
   }
   await deleteDoc(doc(db, 'shop_members', `${shopId}_${userId}`));
+};
+
+export const updateShopName = async (shopId: string, shopName: string): Promise<void> => {
+  const name = shopName.trim();
+  if (!name) throw new Error('Tên shop không được để trống');
+  await updateDoc(doc(db, 'shops', shopId), { name });
 };

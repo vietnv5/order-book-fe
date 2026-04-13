@@ -3,7 +3,7 @@ import BottomSheet from './BottomSheet';
 import ConfirmDialog from './ConfirmDialog';
 import { useShop } from '@/contexts/ShopContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { joinShop, leaveShop } from '@/services/firestore/shops';
+import { joinShop, leaveShop, updateShopName } from '@/services/firestore/shops';
 import { Shop } from '@/types';
 
 interface Props {
@@ -20,6 +20,10 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showRename, setShowRename] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState('');
 
   const [leaveTarget, setLeaveTarget] = useState<Shop | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -76,11 +80,45 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
     }
   };
 
+  const handleOpenRename = () => {
+    if (!shop) return;
+    setRenameValue(shop.name);
+    setRenameError('');
+    setShowRename(true);
+  };
+
+  const handleRename = async () => {
+    if (!shop) return;
+    const nextName = renameValue.trim();
+    if (!nextName) {
+      setRenameError('Tên shop không được để trống');
+      return;
+    }
+    if (nextName === shop.name) {
+      setShowRename(false);
+      return;
+    }
+    setRenameError('');
+    setRenaming(true);
+    try {
+      await updateShopName(shop.shopId, nextName);
+      await refreshShop();
+      setShowRename(false);
+    } catch (err: unknown) {
+      setRenameError(err instanceof Error ? err.message : 'Không thể cập nhật tên shop');
+    } finally {
+      setRenaming(false);
+    }
+  };
+
   const handleClose = () => {
     setShowJoin(false);
     setJoinId('');
     setJoinError('');
     setLeaveError('');
+    setShowRename(false);
+    setRenameValue('');
+    setRenameError('');
     onClose();
   };
 
@@ -90,6 +128,18 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
         {/* Current shop info (for owners to share their ID) */}
         {isOwner && shop && (
           <div className="mb-4 rounded-2xl border border-border bg-app p-4">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-muted">Shop hiện tại</p>
+                <p className="truncate text-sm font-semibold text-text">{shop.name}</p>
+              </div>
+              <button
+                onClick={handleOpenRename}
+                className="rounded-lg bg-surface px-3 py-1.5 text-xs font-medium text-primary shadow-card transition-all active:scale-95"
+              >
+                Đổi tên
+              </button>
+            </div>
             <p className="mb-1 text-xs font-medium text-muted">Mã shop của bạn</p>
             <div className="flex items-center gap-2">
               <p className="flex-1 font-mono text-sm text-text truncate">{shop.shopId}</p>
@@ -252,6 +302,33 @@ export default function ShopSwitcherSheet({ open, onClose }: Props) {
         danger
         onConfirm={handleLeave}
         onCancel={() => { setLeaveTarget(null); setLeaveError(''); }}
+      />
+
+      <ConfirmDialog
+        open={showRename}
+        title="Đổi tên shop"
+        message={
+          <div className="space-y-2 text-left">
+            <input
+              autoFocus
+              className="input-field"
+              placeholder="Nhập tên shop mới"
+              value={renameValue}
+              onChange={(e) => {
+                setRenameValue(e.target.value);
+                setRenameError('');
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+            />
+            {renameError && <p className="text-sm text-danger">{renameError}</p>}
+          </div>
+        }
+        confirmLabel={renaming ? 'Đang lưu...' : 'Lưu'}
+        onConfirm={handleRename}
+        onCancel={() => {
+          setShowRename(false);
+          setRenameError('');
+        }}
       />
     </>
   );
