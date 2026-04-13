@@ -10,6 +10,7 @@ import OrderDetailPage from '@/pages/orders/detail';
 import CustomersPage from '@/pages/customers/index';
 import ProductsPage from '@/pages/products/index';
 import ShippersPage from '@/pages/shippers/index';
+import MembersPage from '@/pages/shop/members';
 
 function App() {
   return (
@@ -69,6 +70,14 @@ function App() {
         element={
           <ProtectedRoute>
             <ShippersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shop/members"
+        element={
+          <ProtectedRoute>
+            <MembersPage />
           </ProtectedRoute>
         }
       />

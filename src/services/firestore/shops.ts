@@ -2,6 +2,7 @@ import {
   doc,
   getDoc,
   setDoc,
+  deleteDoc,
   collection,
   query,
   where,
@@ -81,4 +82,22 @@ export const getMyShops = async (userId: string): Promise<Shop[]> => {
   const shopIds = snap.docs.map((d) => (d.data() as ShopMember).shopId);
   const shops = await Promise.all(shopIds.map(getShop));
   return shops.filter(Boolean) as Shop[];
+};
+
+export const getShopMembers = async (shopId: string): Promise<ShopMember[]> => {
+  const q = query(collection(db, 'shop_members'), where('shopId', '==', shopId));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as ShopMember);
+};
+
+export const removeMember = async (shopId: string, userId: string): Promise<void> => {
+  await deleteDoc(doc(db, 'shop_members', `${shopId}_${userId}`));
+};
+
+export const leaveShop = async (shopId: string, userId: string): Promise<void> => {
+  const snap = await getDoc(doc(db, 'shop_members', `${shopId}_${userId}`));
+  if (snap.exists() && (snap.data() as ShopMember).role === 'owner') {
+    throw new Error('Chủ shop không thể rời shop');
+  }
+  await deleteDoc(doc(db, 'shop_members', `${shopId}_${userId}`));
 };

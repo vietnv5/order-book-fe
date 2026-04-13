@@ -8,7 +8,8 @@ type Mode = 'choose' | 'create' | 'join';
 
 export default function SetupPage() {
   const { user } = useAuth();
-  const { shop, refreshShop } = useShop();
+  const { shop, allShops, refreshShop } = useShop();
+  const alreadyOwnsShop = allShops.some((s) => s.ownerUid === user?.uid);
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('choose');
   const [shopName, setShopName] = useState('');
@@ -54,6 +55,7 @@ export default function SetupPage() {
 
       {mode === 'choose' && (
         <div className="flex flex-col gap-3">
+          {!alreadyOwnsShop && (
           <button
             onClick={() => setMode('create')}
             className="flex items-center gap-4 rounded-2xl bg-surface p-5 shadow-card transition-all active:scale-95"
@@ -68,6 +70,7 @@ export default function SetupPage() {
               <p className="text-sm text-muted">Bắt đầu quản lý đơn hàng của bạn</p>
             </div>
           </button>
+          )}
 
           <button
             onClick={() => setMode('join')}

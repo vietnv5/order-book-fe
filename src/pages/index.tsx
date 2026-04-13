@@ -22,7 +22,7 @@ function formatCurrency(amount: number) {
 const today = new Date().toISOString().split('T')[0];
 
 export default function DashboardPage() {
-  const { shop, shopId } = useShop();
+  const { shop, shopId, role } = useShop();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
@@ -118,6 +118,17 @@ export default function DashboardPage() {
                     </svg>
                     Chuyển / tham gia shop
                   </button>
+                  {role === 'owner' && (
+                    <button
+                      onClick={() => { navigate('/shop/members'); setShowUserMenu(false); }}
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
+                    >
+                      <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      Quản lý thành viên
+                    </button>
+                  )}
                   <button
                     onClick={() => { navigate('/shippers'); setShowUserMenu(false); }}
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
