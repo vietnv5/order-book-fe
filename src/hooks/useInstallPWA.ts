@@ -5,9 +5,22 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+function detectIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as unknown as Record<string, unknown>).MSStream;
+}
+
+function detectStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true
+  );
+}
+
 export function useInstallPWA() {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const isIOS = detectIOS();
+  const isStandalone = detectStandalone();
 
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
@@ -37,5 +50,10 @@ export function useInstallPWA() {
     setInstallEvent(null);
   };
 
-  return { canInstall: !!installEvent && !isInstalled, install };
+  return {
+    canInstall: !!installEvent && !isInstalled,
+    install,
+    isIOS,
+    isStandalone,
+  };
 }

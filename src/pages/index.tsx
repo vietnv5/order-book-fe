@@ -11,6 +11,7 @@ import { useShop } from '@/contexts/ShopContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOut } from '@/services/auth';
 import { subscribeOrders } from '@/services/firestore/orders';
+import { updateShopName } from '@/services/firestore/shops';
 import { Order } from '@/types';
 
 function formatCurrency(amount: number) {
@@ -21,17 +22,27 @@ function formatCurrency(amount: number) {
 
 const today = new Date().toISOString().split('T')[0];
 
+function getThirtyDaysAgo() {
+  const d = new Date();
+  d.setDate(d.getDate() - 29);
+  return d.toISOString().split('T')[0];
+}
+
 export default function DashboardPage() {
-  const { shop, shopId, role } = useShop();
+  const { shop, shopId, role, refreshShop } = useShop();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showShopSwitcher, setShowShopSwitcher] = useState(false);
-  const [dateFrom, setDateFrom] = useState(today);
+  const [dateFrom, setDateFrom] = useState(getThirtyDaysAgo);
   const [dateTo, setDateTo] = useState(today);
   const [showDateFilter, setShowDateFilter] = useState(false);
+  const [showEditShopName, setShowEditShopName] = useState(false);
+  const [editShopNameValue, setEditShopNameValue] = useState('');
+  const [editShopSaving, setEditShopSaving] = useState(false);
+  const [editShopError, setEditShopError] = useState('');
 
   useEffect(() => {
     if (!shopId) { setLoading(false); return; }
@@ -41,6 +52,21 @@ export default function DashboardPage() {
     });
     return unsub;
   }, [shopId]);
+
+  const handleSaveShopName = async () => {
+    if (!shopId || !editShopNameValue.trim()) return;
+    setEditShopSaving(true);
+    setEditShopError('');
+    try {
+      await updateShopName(shopId, editShopNameValue);
+      await refreshShop();
+      setShowEditShopName(false);
+    } catch (e: unknown) {
+      setEditShopError(e instanceof Error ? e.message : 'Không thể lưu tên shop');
+    } finally {
+      setEditShopSaving(false);
+    }
+  };
 
   const rangeOrders = useMemo(() => {
     return allOrders.filter((o) => {
@@ -119,15 +145,31 @@ export default function DashboardPage() {
                     Chuyển / tham gia shop
                   </button>
                   {role === 'owner' && (
-                    <button
-                      onClick={() => { navigate('/shop/members'); setShowUserMenu(false); }}
-                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
-                    >
-                      <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      Quản lý thành viên
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditShopNameValue(shop?.name ?? '');
+                          setEditShopError('');
+                          setShowEditShopName(true);
+                          setShowUserMenu(false);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
+                      >
+                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Đổi tên shop
+                      </button>
+                      <button
+                        onClick={() => { navigate('/shop/members'); setShowUserMenu(false); }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
+                      >
+                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        Quản lý thành viên
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => { navigate('/shippers'); setShowUserMenu(false); }}
@@ -301,6 +343,48 @@ export default function DashboardPage() {
         )}
       </div>
       <ShopSwitcherSheet open={showShopSwitcher} onClose={() => setShowShopSwitcher(false)} />
+
+      {/* Edit shop name dialog */}
+      {showEditShopName && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowEditShopName(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div
+            className="relative w-full max-w-lg rounded-t-3xl bg-surface p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-base font-semibold text-text">Đổi tên shop</h3>
+            <input
+              type="text"
+              className="input-field mb-1"
+              value={editShopNameValue}
+              maxLength={60}
+              autoFocus
+              onChange={(e) => setEditShopNameValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveShopName(); }}
+              placeholder="Tên shop"
+            />
+            {editShopError && (
+              <p className="mb-3 text-xs text-danger">{editShopError}</p>
+            )}
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={() => setShowEditShopName(false)}
+                className="btn-secondary flex-1"
+                disabled={editShopSaving}
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={handleSaveShopName}
+                className="btn-primary flex-1"
+                disabled={editShopSaving || !editShopNameValue.trim()}
+              >
+                {editShopSaving ? 'Đang lưu...' : 'Lưu'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DefaultLayout>
   );
 }
