@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { PWAInstallBanner } from '@/components/PWAInstallBanner';
 
 import LoginPage from '@/pages/login';
 import SetupPage from '@/pages/setup';
@@ -14,6 +15,7 @@ import MembersPage from '@/pages/shop/members';
 
 function App() {
   return (
+    <>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/setup" element={<SetupPage />} />
@@ -82,6 +84,8 @@ function App() {
         }
       />
     </Routes>
+    <PWAInstallBanner />
+    </>
   );
 }
 

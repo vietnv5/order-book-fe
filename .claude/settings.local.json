@@ -11,7 +11,8 @@
       "Bash(python3 \"C:/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"e-commerce order management mobile app Vietnamese shop switcher\" --design-system -p \"Order Book\")",
       "Bash(py -3 \"C:/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/.claude/skills/ui-ux-pro-max/scripts/search.py\" \"e-commerce order management mobile app Vietnamese shop switcher\" --design-system -p \"Order Book\")",
       "Bash(py -3 \"C:/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/src/ui-ux-pro-max/scripts/search.py\" \"e-commerce order management mobile shop switcher multi-tenant\" --design-system -p \"OrderBook\")",
-      "Bash(py -3 \"C:/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/src/ui-ux-pro-max/scripts/search.py\" \"account switcher multi-workspace navigation\" --domain ux)"
+      "Bash(py -3 \"C:/Users/VietNV/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/src/ui-ux-pro-max/scripts/search.py\" \"account switcher multi-workspace navigation\" --domain ux)",
+      "Bash(node -e \"const {createReadStream} = require\\('fs'\\); const rs = createReadStream\\('public/icon.png'\\); let buf = []; rs.on\\('data', d => buf.push\\(d\\)\\); rs.on\\('end', \\(\\) => { const b = Buffer.concat\\(buf\\); console.log\\('PNG signature:', b.slice\\(0,8\\).toString\\('hex'\\)\\); const w = b.readUInt32BE\\(16\\); const h = b.readUInt32BE\\(20\\); console.log\\('Width:', w, 'Height:', h\\); console.log\\('File size:', b.length\\); }\\);\")"
     ]
   }
 }
