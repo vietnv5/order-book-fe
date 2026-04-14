@@ -346,10 +346,11 @@ export default function DashboardPage() {
 
       {/* Edit shop name dialog */}
       {showEditShopName && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={() => setShowEditShopName(false)}>
-          <div className="absolute inset-0 bg-black/40" />
+        <div className="fixed inset-0 z-[200] flex items-end justify-center" onClick={() => setShowEditShopName(false)}>
+          <div className="absolute inset-0 bg-black/50" />
           <div
-            className="relative w-full max-w-lg rounded-t-3xl bg-surface p-6 shadow-xl"
+            className="relative w-full max-w-lg rounded-t-3xl bg-surface px-6 pt-6 pb-safe shadow-xl"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="mb-4 text-base font-semibold text-text">Đổi tên shop</h3>
