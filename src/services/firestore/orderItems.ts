@@ -10,7 +10,7 @@ import { db } from '@/config/firebase';
 import { OrderItem } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
 import { logOrderActivity } from './orderActivities';
-import { SimpleItem, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
+import { SimpleItem, ORDER_ACTIVITY_ACTIONS, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
 
 export const getOrderItems = async (shopId: string, orderId: string): Promise<OrderItem[]> => {
   const snap = await getDocs(
@@ -56,11 +56,12 @@ export const saveOrderItems = async (
   const description = `${itemsBefore.length} → ${itemsAfter.length} sản phẩm`;
 
   logOrderActivity(shopId, {
-    module: 'orders',
-    action: 'items_changed',
-    targetType: 'order_items',
+    module: 'ORDER',
+    action: ORDER_ACTIVITY_ACTIONS.UPDATE_ORDER_ITEM,
+    targetType: 'ORDER_ITEMS',
+    targetId: null,
     targetUuid: orderId,
-    title: ORDER_ACTIVITY_LABELS['items_changed'],
+    title: ORDER_ACTIVITY_LABELS[ORDER_ACTIVITY_ACTIONS.UPDATE_ORDER_ITEM],
     description,
     data: { itemsBefore, itemsAfter },
   }).catch(console.warn);

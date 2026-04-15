@@ -14,7 +14,7 @@ import { getOrderItems, saveOrderItems } from '@/services/firestore/orderItems';
 import { findOrCreateCustomer } from '@/services/firestore/customers';
 import { getOrderActivities } from '@/services/firestore/orderActivities';
 import { Order, OrderItem, DeliveryStatus, DELIVERY_STATUS_LABELS } from '@/types';
-import { OrderActivity, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
+import { OrderActivity, ORDER_ACTIVITY_LABELS, ORDER_ACTIVITY_ACTIONS, normalizeOrderActivityAction } from '@/types/orderActivity';
 import { OrderItemDraft } from '@/components/order/OrderItemRow';
 
 export default function OrderDetailPage() {
@@ -277,14 +277,18 @@ export default function OrderDetailPage() {
           <div className="flex flex-col gap-0 pb-4">
             {activities.map((activity, idx) => (
               <div key={activity.uuid} className="flex gap-3">
+                {(() => {
+                  const action = normalizeOrderActivityAction(activity.action);
+                  return (
+                    <>
                 {/* Timeline dot + connector */}
                 <div className="flex flex-col items-center">
                   <div className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${
-                    activity.action === 'created' ? 'bg-emerald-500'
-                    : activity.action === 'deleted' ? 'bg-danger'
-                    : activity.action === 'status_changed' ? 'bg-primary'
-                    : activity.action === 'payment_changed' ? 'bg-amber-500'
-                    : activity.action === 'items_changed' ? 'bg-violet-500'
+                    action === ORDER_ACTIVITY_ACTIONS.CREATE_ORDER ? 'bg-emerald-500'
+                    : action === ORDER_ACTIVITY_ACTIONS.DELETE_ORDER ? 'bg-danger'
+                    : action === ORDER_ACTIVITY_ACTIONS.CHANGE_ORDER_STATUS ? 'bg-primary'
+                    : action === ORDER_ACTIVITY_ACTIONS.CHANGE_PAYMENT_STATUS ? 'bg-amber-500'
+                    : action === ORDER_ACTIVITY_ACTIONS.UPDATE_ORDER_ITEM ? 'bg-violet-500'
                     : 'bg-slate-400'
                   }`} />
                   {idx < activities.length - 1 && (
@@ -292,15 +296,15 @@ export default function OrderDetailPage() {
                   )}
                 </div>
                 <div className="pb-4 min-w-0 flex-1">
-                  <p className="text-sm font-medium text-text">{ORDER_ACTIVITY_LABELS[activity.action]}</p>
+                  <p className="text-sm font-medium text-text">{ORDER_ACTIVITY_LABELS[action]}</p>
 
                   {/* description covers status_changed "Chờ → Đã giao", payment_changed, items count */}
                   {activity.description && (
                     <p className="text-xs text-muted mt-0.5">{activity.description}</p>
                   )}
 
-                  {/* items_changed: list after-items when description alone isn't enough */}
-                  {activity.action === 'items_changed' && (() => {
+                  {/* UPDATE_ORDER_ITEM: list after-items when description alone isn't enough */}
+                  {action === ORDER_ACTIVITY_ACTIONS.UPDATE_ORDER_ITEM && (() => {
                     const afterItems = (activity.data?.itemsAfter as Array<{ productName: string; quantity: number }> | undefined);
                     if (!afterItems?.length) return null;
                     return (
@@ -314,6 +318,9 @@ export default function OrderDetailPage() {
                     {format(new Date(activity.createdAt), 'HH:mm dd/MM/yyyy', { locale: vi })}
                   </p>
                 </div>
+                    </>
+                  );
+                })()}
               </div>
             ))}
           </div>

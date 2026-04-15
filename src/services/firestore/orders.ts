@@ -16,7 +16,7 @@ import { Order, DeliveryStatus } from '@/types';
 import { DELIVERY_STATUS_LABELS } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
 import { logOrderActivity } from './orderActivities';
-import { ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
+import { ORDER_ACTIVITY_ACTIONS, ORDER_ACTIVITY_LABELS, CanonicalOrderActivityAction } from '@/types/orderActivity';
 
 export const subscribeOrders = (
   shopId: string,
@@ -75,11 +75,12 @@ export const createOrder = async (
     stripUndefined(order as unknown as Record<string, unknown>),
   );
   logOrderActivity(shopId, {
-    module: 'orders',
-    action: 'created',
-    targetType: 'order',
+    module: 'ORDER',
+    action: ORDER_ACTIVITY_ACTIONS.CREATE_ORDER,
+    targetType: 'ORDER',
+    targetId: null,
     targetUuid: uuid,
-    title: ORDER_ACTIVITY_LABELS['created'],
+    title: ORDER_ACTIVITY_LABELS[ORDER_ACTIVITY_ACTIONS.CREATE_ORDER],
     data: { after: order },
   }).catch(console.warn);
   return order;
@@ -105,23 +106,24 @@ export const updateOrder = async (
   } as Record<string, unknown>);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
 
-  const action =
-    data.deliveryStatus != null ? 'status_changed'
-    : data.paid != null ? 'payment_changed'
-    : 'updated';
+  const action: CanonicalOrderActivityAction =
+    data.deliveryStatus != null ? ORDER_ACTIVITY_ACTIONS.CHANGE_ORDER_STATUS
+    : data.paid != null ? ORDER_ACTIVITY_ACTIONS.CHANGE_PAYMENT_STATUS
+    : ORDER_ACTIVITY_ACTIONS.UPDATE_ORDER;
 
   // Build human-readable description for before → after
   let description: string | undefined;
-  if (action === 'status_changed' && current?.deliveryStatus && data.deliveryStatus) {
+  if (action === ORDER_ACTIVITY_ACTIONS.CHANGE_ORDER_STATUS && current?.deliveryStatus && data.deliveryStatus) {
     description = `${DELIVERY_STATUS_LABELS[current.deliveryStatus]} → ${DELIVERY_STATUS_LABELS[data.deliveryStatus]}`;
-  } else if (action === 'payment_changed' && current != null) {
+  } else if (action === ORDER_ACTIVITY_ACTIONS.CHANGE_PAYMENT_STATUS && current != null) {
     description = `${current.paid ? 'Đã thanh toán' : 'Chưa TT'} → ${data.paid ? 'Đã thanh toán' : 'Chưa TT'}`;
   }
 
   logOrderActivity(shopId, {
-    module: 'orders',
+    module: 'ORDER',
     action,
-    targetType: 'order',
+    targetType: 'ORDER',
+    targetId: null,
     targetUuid: uuid,
     title: ORDER_ACTIVITY_LABELS[action],
     description,
@@ -139,11 +141,12 @@ export const deleteOrder = async (shopId: string, uuid: string): Promise<void> =
     updatedAt: new Date().toISOString(),
   });
   logOrderActivity(shopId, {
-    module: 'orders',
-    action: 'deleted',
-    targetType: 'order',
+    module: 'ORDER',
+    action: ORDER_ACTIVITY_ACTIONS.DELETE_ORDER,
+    targetType: 'ORDER',
+    targetId: null,
     targetUuid: uuid,
-    title: ORDER_ACTIVITY_LABELS['deleted'],
+    title: ORDER_ACTIVITY_LABELS[ORDER_ACTIVITY_ACTIONS.DELETE_ORDER],
     data: { before: current ?? undefined },
   }).catch(console.warn);
 };

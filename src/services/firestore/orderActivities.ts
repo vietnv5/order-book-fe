@@ -25,14 +25,13 @@ export const logOrderActivity = async (
   const entry: OrderActivity = {
     ...activity,
     uuid,
+    targetId: activity.targetId ?? null,
     createdAt: now,
     updatedAt: now,
     actor: auth.currentUser?.uid,
   };
-  await setDoc(
-    doc(db, 'shops', shopId, 'order_activities', uuid),
-    stripUndefined(entry as unknown as Record<string, unknown>),
-  );
+  const payload = stripUndefined(entry as unknown as Record<string, unknown>);
+  await setDoc(doc(db, 'shops', shopId, 'activity_logs', uuid), payload);
 };
 
 /**
@@ -42,12 +41,22 @@ export const getOrderActivities = async (
   shopId: string,
   orderId: string,
 ): Promise<OrderActivity[]> => {
-  const snap = await getDocs(
-    query(
-      getShopCollection(shopId, 'order_activities'),
-      where('targetUuid', '==', orderId),
-      orderBy('createdAt', 'desc'),
-    ),
-  );
-  return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as OrderActivity);
+  const col = getShopCollection(shopId, 'activity_logs');
+  try {
+    const snap = await getDocs(
+      query(
+        col,
+        where('targetUuid', '==', orderId),
+        orderBy('createdAt', 'desc'),
+      ),
+    );
+    return snap.docs.map((d) => ({ uuid: d.id, ...d.data() }) as OrderActivity);
+  } catch (error) {
+    // Missing composite index can break where+orderBy; fallback to where-only + client sort.
+    console.warn('[activity] read activity_logs with orderBy failed, fallback to client sort', error);
+    const snap = await getDocs(query(col, where('targetUuid', '==', orderId)));
+    return snap.docs
+      .map((d) => ({ uuid: d.id, ...d.data() }) as OrderActivity)
+      .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''));
+  }
 };
