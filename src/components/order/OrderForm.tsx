@@ -14,6 +14,13 @@ interface Props {
   submitLabel?: string;
 }
 
+/** Convert an ISO string to the local-time value required by datetime-local inputs (yyyy-MM-ddTHH:mm:ss). */
+function toLocalDatetimeInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 export default function OrderForm({ shopId, initial, initialItems, onSubmit, submitLabel = 'Lưu đơn' }: Props) {
   const { products } = useProducts();
   const { customers } = useCustomers();
@@ -29,7 +36,7 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
   const [paid, setPaid] = useState(initial?.paid ?? false);
   const [description, setDescription] = useState(initial?.description ?? '');
   const [statAt, setStatAt] = useState(
-    initial?.statAt ? initial.statAt.substring(0, 10) : new Date().toISOString().substring(0, 10),
+    initial?.statAt ? toLocalDatetimeInput(initial.statAt) : toLocalDatetimeInput(new Date().toISOString()),
   );
   const [items, setItems] = useState<OrderItemDraft[]>(initialItems ?? []);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -207,10 +214,11 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
           />
         </div>
         <div>
-          <label htmlFor="stat-at" className="mb-1.5 block text-sm font-medium text-text">Ngày đặt</label>
+          <label htmlFor="stat-at" className="mb-1.5 block text-sm font-medium text-text">Ngày giờ đặt</label>
           <input
             id="stat-at"
-            type="date"
+            type="datetime-local"
+            step="1"
             className="input-field"
             value={statAt}
             onChange={(e) => setStatAt(e.target.value)}
