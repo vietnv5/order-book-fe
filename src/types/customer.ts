@@ -9,3 +9,11 @@ export interface Customer {
   updatedAt?: string;
   deleted?: boolean;
 }
+
+export interface CustomerStatistics {
+  customerId: string;
+  totalOrders: number;
+  unpaidOrders: number;
+  totalAmount: number;
+  totalDebt: number;
+}
