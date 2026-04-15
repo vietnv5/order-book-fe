@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { useInstallPWA } from "@/hooks/useInstallPWA";
 
+const ANDROID_APP_URL =
+  "https://play.google.com/store/apps/details?id=com.vsoft.orderbook&pcampaignid=web_share";
+
+function detectAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
 export function PWAInstallBanner() {
   const { canInstall, install, isIOS, isStandalone } = useInstallPWA();
+  const isAndroid = detectAndroid();
   const [dismissed, setDismissed] = useState(
     () => sessionStorage.getItem("pwa-install-dismissed") === "1"
   );
@@ -52,7 +60,41 @@ export function PWAInstallBanner() {
     );
   }
 
-  // Android / Chrome: beforeinstallprompt available
+  // Android: prioritize native app install suggestion
+  if (isAndroid) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-3 pb-safe">
+        <div className="bg-surface shadow-card rounded-xl p-4 flex items-center gap-3 border border-white/10">
+          <img src="/icon.png" alt="App icon" className="w-10 h-10 rounded-xl shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-text text-sm font-semibold leading-tight">Tải app Sổ Đơn Hàng</p>
+            <p className="text-muted text-xs mt-0.5">Cài từ Google Play để dùng ổn định hơn</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                sessionStorage.setItem("pwa-install-dismissed", "1");
+                setDismissed(true);
+              }}
+              className="text-muted text-sm px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              Bỏ qua
+            </button>
+            <a
+              href={ANDROID_APP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary text-sm px-3 py-1.5"
+            >
+              Google Play
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Non-Android browsers: use native PWA prompt when available
   if (!canInstall) return null;
 
   return (
