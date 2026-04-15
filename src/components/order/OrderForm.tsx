@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Order, DeliveryStatus, DELIVERY_STATUS_LABELS } from '@/types';
 import { useProducts } from '@/hooks/useProducts';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -34,8 +34,20 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [totalAmountInput, setTotalAmountInput] = useState(String(initial?.totalAmount ?? ''));
 
-  const totalAmount = items.reduce((sum, i) => sum + i.quantity * i.sellPrice, 0);
+  // Auto-calculate total when all items have prices set
+  const computedTotal = useMemo(
+    () => items.reduce((sum, i) => sum + i.quantity * (i.sellPrice || 0), 0),
+    [items],
+  );
+  const allItemsPriced = items.length > 0 && items.every((i) => (i.sellPrice || 0) > 0);
+
+  useEffect(() => {
+    if (allItemsPriced) {
+      setTotalAmountInput(String(computedTotal));
+    }
+  }, [computedTotal, allItemsPriced]);
 
   const handleCustomerSelect = (c: { uuid: string; name: string; sdt?: string; address?: string }) => {
     setCustomerId(c.uuid);
@@ -69,7 +81,7 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
         paid,
         description: description.trim() || undefined,
         statAt: statAt ? new Date(statAt).toISOString() : undefined,
-        totalAmount,
+        totalAmount: totalAmountInput ? Number(totalAmountInput) : undefined,
         source: initial?.source ?? 'manual',
       }, items.filter((i) => i.productId));
     } catch (e: unknown) {
@@ -219,11 +231,26 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
             </button>
           )}
         </div>
-        {totalAmount > 0 && (
-          <p className="mt-2 text-right text-sm font-semibold text-text">
-            Tổng: {totalAmount.toLocaleString('vi')}đ
-          </p>
-        )}
+      </div>
+
+      {/* Total amount */}
+      <div>
+        <label htmlFor="total-amount" className="mb-1.5 block text-sm font-medium text-text">
+          Tổng tiền hàng
+          {allItemsPriced && (
+            <span className="ml-1.5 text-xs font-normal text-success">● tự tính từ sản phẩm</span>
+          )}
+        </label>
+        <input
+          id="total-amount"
+          type="number"
+          min="0"
+          inputMode="numeric"
+          className="input-field"
+          placeholder="0"
+          value={totalAmountInput}
+          onChange={(e) => setTotalAmountInput(e.target.value)}
+        />
       </div>
 
       {/* Delivery */}

@@ -7,6 +7,7 @@ import {
   doc,
   onSnapshot,
   Unsubscribe,
+  where,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
@@ -57,5 +58,39 @@ export const updateCustomer = async (shopId: string, uuid: string, data: Partial
 export const deleteCustomer = async (shopId: string, uuid: string): Promise<void> => {
   await updateDoc(doc(db, 'shops', shopId, 'customers', uuid), {
     deleted: true, updatedAt: new Date().toISOString(),
+  });
+};
+
+/**
+ * Find an existing customer by name (+ optional phone), or create a new one.
+ * Matching priority: name + phone (if phone provided), else name only.
+ */
+export const findOrCreateCustomer = async (
+  shopId: string,
+  name: string,
+  phone?: string,
+): Promise<Customer> => {
+  const trimmedName = name.trim();
+  const trimmedPhone = phone?.trim();
+
+  const snap = await getDocs(
+    query(getShopCollection(shopId, 'customers'), where('name', '==', trimmedName)),
+  );
+  const existing = snap.docs
+    .map((d) => ({ uuid: d.id, ...d.data() }) as Customer)
+    .filter((c) => !c.deleted);
+
+  if (trimmedPhone) {
+    const byPhone = existing.find((c) => c.sdt === trimmedPhone);
+    if (byPhone) return byPhone;
+  } else if (existing.length > 0) {
+    return existing[0];
+  }
+
+  // Not found — create new
+  return createCustomer(shopId, {
+    name: trimmedName,
+    sdt: trimmedPhone || undefined,
+    active: true,
   });
 };

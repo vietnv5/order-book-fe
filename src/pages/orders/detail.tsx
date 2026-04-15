@@ -11,6 +11,7 @@ import OrderForm from '@/components/order/OrderForm';
 import { useShop } from '@/contexts/ShopContext';
 import { getOrder, updateOrder, deleteOrder } from '@/services/firestore/orders';
 import { getOrderItems, saveOrderItems } from '@/services/firestore/orderItems';
+import { findOrCreateCustomer } from '@/services/firestore/customers';
 import { Order, OrderItem, DeliveryStatus, DELIVERY_STATUS_LABELS } from '@/types';
 import { OrderItemDraft } from '@/components/order/OrderItemRow';
 
@@ -57,7 +58,15 @@ export default function OrderDetailPage() {
 
   const handleEdit = async (orderData: Partial<Order>, draftItems: OrderItemDraft[]) => {
     if (!shopId || !uuid) return;
-    await updateOrder(shopId, uuid, orderData);
+
+    // Auto-create/find customer if name is provided but no customerId
+    let customerId = orderData.customerId;
+    if (!customerId && orderData.customerName) {
+      const customer = await findOrCreateCustomer(shopId, orderData.customerName, orderData.customerPhone);
+      customerId = customer.uuid;
+    }
+
+    await updateOrder(shopId, uuid, { ...orderData, customerId });
     await saveOrderItems(shopId, uuid, draftItems, items);
     await loadOrder();
     setEditOpen(false);
