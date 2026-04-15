@@ -1,5 +1,5 @@
 import {
-  query, orderBy, getDocs, setDoc, updateDoc, doc, onSnapshot, Unsubscribe,
+  query, orderBy, getDocs, setDoc, updateDoc, doc, onSnapshot, Unsubscribe, where,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
@@ -51,4 +51,16 @@ export const deleteProduct = async (shopId: string, uuid: string): Promise<void>
   await updateDoc(doc(db, 'shops', shopId, 'products', uuid), {
     deleted: true, updatedAt: new Date().toISOString(),
   });
+};
+
+export const findOrCreateProduct = async (shopId: string, name: string): Promise<Product> => {
+  const trimmedName = name.trim();
+  const snap = await getDocs(
+    query(getShopCollection(shopId, 'products'), where('name', '==', trimmedName)),
+  );
+  const existing = snap.docs
+    .map((d) => ({ uuid: d.id, ...d.data() }) as Product)
+    .filter((p) => !p.deleted);
+  if (existing.length > 0) return existing[0];
+  return createProduct(shopId, { name: trimmedName, active: true });
 };

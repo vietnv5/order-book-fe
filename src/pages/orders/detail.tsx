@@ -251,6 +251,7 @@ export default function OrderDetailPage() {
       {/* Edit sheet */}
       <BottomSheet open={editOpen} onClose={() => setEditOpen(false)} title="Sửa đơn hàng" fullHeight>
         <OrderForm
+          shopId={shopId ?? ''}
           initial={order}
           initialItems={items.map((i) => ({
             productId: i.productId,

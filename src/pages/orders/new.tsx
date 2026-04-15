@@ -34,7 +34,7 @@ export default function NewOrderPage() {
     <DefaultLayout>
       <AppHeader title="Tạo đơn hàng" showBack />
       <div className="px-4 py-4">
-        <OrderForm onSubmit={handleSubmit} submitLabel="Tạo đơn hàng" />
+        <OrderForm shopId={shopId ?? ''} onSubmit={handleSubmit} submitLabel="Tạo đơn hàng" />
       </div>
     </DefaultLayout>
   );

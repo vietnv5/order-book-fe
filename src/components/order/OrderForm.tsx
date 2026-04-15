@@ -3,16 +3,18 @@ import { Order, DeliveryStatus, DELIVERY_STATUS_LABELS } from '@/types';
 import { useProducts } from '@/hooks/useProducts';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useShippers } from '@/hooks/useShippers';
+import { findOrCreateProduct } from '@/services/firestore/products';
 import OrderItemRow, { OrderItemDraft } from './OrderItemRow';
 
 interface Props {
+  shopId?: string;
   initial?: Partial<Order>;
   initialItems?: OrderItemDraft[];
   onSubmit: (order: Partial<Order>, items: OrderItemDraft[]) => Promise<void>;
   submitLabel?: string;
 }
 
-export default function OrderForm({ initial, initialItems, onSubmit, submitLabel = 'Lưu đơn' }: Props) {
+export default function OrderForm({ shopId, initial, initialItems, onSubmit, submitLabel = 'Lưu đơn' }: Props) {
   const { products } = useProducts();
   const { customers } = useCustomers();
   const { shippers } = useShippers();
@@ -70,6 +72,22 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
     }
     setError(''); setLoading(true);
     try {
+      // Filter items that have either a product selected or a new name typed
+      let resolvedItems = items.filter((i) => i.productId || i.productName.trim());
+
+      // Auto-create products for items with a typed name but no productId
+      if (shopId) {
+        resolvedItems = await Promise.all(
+          resolvedItems.map(async (i) => {
+            if (!i.productId && i.productName.trim()) {
+              const product = await findOrCreateProduct(shopId, i.productName);
+              return { ...i, productId: product.uuid, productName: product.name };
+            }
+            return i;
+          }),
+        );
+      }
+
       await onSubmit({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || undefined,
@@ -83,7 +101,7 @@ export default function OrderForm({ initial, initialItems, onSubmit, submitLabel
         statAt: statAt ? new Date(statAt).toISOString() : undefined,
         totalAmount: totalAmountInput ? Number(totalAmountInput) : undefined,
         source: initial?.source ?? 'manual',
-      }, items.filter((i) => i.productId));
+      }, resolvedItems);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Có lỗi xảy ra');
     } finally { setLoading(false); }

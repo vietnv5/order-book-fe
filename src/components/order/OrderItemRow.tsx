@@ -30,6 +30,10 @@ export default function OrderItemRow({ item, index, products, onChange, onRemove
             className="input-field mb-2 text-sm"
             value={item.productId}
             onChange={(e) => {
+              if (!e.target.value) {
+                onChange(index, { ...item, productId: '', productName: '' });
+                return;
+              }
               const p = products.find((x) => x.uuid === e.target.value);
               if (p) onChange(index, {
                 ...item,
@@ -45,6 +49,15 @@ export default function OrderItemRow({ item, index, products, onChange, onRemove
               <option key={p.uuid} value={p.uuid}>{p.name}</option>
             ))}
           </select>
+          {item.productId === '' && (
+            <input
+              id={`${rowId}-new-product`}
+              className="input-field mb-2 text-sm"
+              placeholder="Nhập tên sản phẩm mới..."
+              value={item.productName}
+              onChange={(e) => onChange(index, { ...item, productName: e.target.value })}
+            />
+          )}
           <div className="flex gap-2">
             <div className="flex-1">
               <label htmlFor={`${rowId}-qty`} className="text-xs text-muted">Số lượng</label>
