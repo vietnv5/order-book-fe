@@ -102,7 +102,7 @@ export default function OrderCard({ order, onUpdateStatus, onUpdatePaid }: Props
           )}
           <p className="mt-0.5 text-[11px] text-muted">
             {order.statAt || order.createdAt
-              ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM', { locale: vi })
+              ? format(new Date(order.statAt ?? order.createdAt), 'HH:mm dd/MM', { locale: vi })
               : ''}
           </p>
           <svg className="ml-auto mt-1 h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

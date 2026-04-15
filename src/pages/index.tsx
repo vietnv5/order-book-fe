@@ -312,7 +312,7 @@ export default function DashboardPage() {
                       )}
                       <p className="mt-0.5 text-[11px] text-muted">
                         {order.statAt || order.createdAt
-                          ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM', { locale: vi })
+                          ? format(new Date(order.statAt ?? order.createdAt), 'HH:mm dd/MM', { locale: vi })
                           : ''}
                       </p>
                     </div>

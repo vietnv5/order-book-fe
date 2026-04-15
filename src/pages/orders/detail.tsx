@@ -164,7 +164,7 @@ export default function OrderDetailPage() {
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
             <p className="text-xs text-muted">
               {order.statAt || order.createdAt
-                ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM/yyyy', { locale: vi })
+                ? format(new Date(order.statAt ?? order.createdAt), 'HH:mm:ss dd/MM/yyyy', { locale: vi })
                 : ''}
             </p>
             <button
@@ -303,7 +303,7 @@ export default function OrderDetailPage() {
                     </p>
                   )}
                   <p className="mt-0.5 text-[11px] text-muted">
-                    {format(new Date(activity.createdAt), 'HH:mm dd/MM/yyyy', { locale: vi })}
+                    {format(new Date(activity.createdAt), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
                   </p>
                 </div>
               </div>
