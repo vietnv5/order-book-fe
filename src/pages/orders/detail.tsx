@@ -12,7 +12,9 @@ import { useShop } from '@/contexts/ShopContext';
 import { getOrder, updateOrder, deleteOrder } from '@/services/firestore/orders';
 import { getOrderItems, saveOrderItems } from '@/services/firestore/orderItems';
 import { findOrCreateCustomer } from '@/services/firestore/customers';
+import { getOrderActivities } from '@/services/firestore/orderActivities';
 import { Order, OrderItem, DeliveryStatus, DELIVERY_STATUS_LABELS } from '@/types';
+import { OrderActivity, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
 import { OrderItemDraft } from '@/components/order/OrderItemRow';
 
 export default function OrderDetailPage() {
@@ -25,6 +27,9 @@ export default function OrderDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [activities, setActivities] = useState<OrderActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   const loadOrder = async () => {
     if (!shopId || !uuid) return;
@@ -35,6 +40,18 @@ export default function OrderDetailPage() {
   };
 
   useEffect(() => { loadOrder(); }, [shopId, uuid]);
+
+  const openHistory = async () => {
+    setHistoryOpen(true);
+    if (!shopId || !uuid) return;
+    setActivitiesLoading(true);
+    try {
+      const data = await getOrderActivities(shopId, uuid);
+      setActivities(data);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
 
   const handleStatusChange = async (status: DeliveryStatus) => {
     if (!shopId || !uuid) return;
@@ -101,6 +118,15 @@ export default function OrderDetailPage() {
         showBack
         rightAction={
           <div className="flex gap-1">
+            <button
+              onClick={openHistory}
+              aria-label="Xem lịch sử"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-muted"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
             <button onClick={() => setEditOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
               <svg className="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -143,7 +169,9 @@ export default function OrderDetailPage() {
             </p>
             <button
               onClick={handleTogglePaid}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${order.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-muted'}`}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
+                order.paid ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-muted'
+              }`}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${order.paid ? 'bg-success' : 'bg-gray-400'}`} />
               {order.paid ? 'Đã thanh toán' : 'Chưa TT'}
@@ -161,9 +189,7 @@ export default function OrderDetailPage() {
                 disabled={statusLoading}
                 onClick={() => handleStatusChange(s)}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
-                  order.deliveryStatus === s
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-muted'
+                  order.deliveryStatus === s ? 'bg-primary text-white' : 'bg-gray-100 text-muted'
                 }`}
               >
                 {DELIVERY_STATUS_LABELS[s]}
@@ -236,6 +262,53 @@ export default function OrderDetailPage() {
           onSubmit={handleEdit}
           submitLabel="Lưu thay đổi"
         />
+      </BottomSheet>
+
+      {/* Activity history sheet */}
+      <BottomSheet open={historyOpen} onClose={() => setHistoryOpen(false)} title="Lịch sử đơn hàng">
+        {activitiesLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          </div>
+        ) : activities.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted">Chưa có lịch sử hoạt động</p>
+        ) : (
+          <div className="flex flex-col gap-0 pb-4">
+            {activities.map((activity, idx) => (
+              <div key={activity.uuid} className="flex gap-3">
+                {/* Timeline line */}
+                <div className="flex flex-col items-center">
+                  <div className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${
+                    activity.action === 'created' ? 'bg-emerald-500'
+                    : activity.action === 'deleted' ? 'bg-danger'
+                    : activity.action === 'status_changed' ? 'bg-primary'
+                    : activity.action === 'payment_changed' ? 'bg-amber-500'
+                    : 'bg-slate-400'
+                  }`} />
+                  {idx < activities.length - 1 && (
+                    <div className="w-px flex-1 bg-border my-1" />
+                  )}
+                </div>
+                <div className="pb-4 min-w-0 flex-1">
+                  <p className="text-sm font-medium text-text">{ORDER_ACTIVITY_LABELS[activity.action]}</p>
+                  {activity.action === 'status_changed' && activity.after?.deliveryStatus && (
+                    <p className="text-xs text-muted">
+                      {DELIVERY_STATUS_LABELS[activity.after.deliveryStatus]}
+                    </p>
+                  )}
+                  {activity.action === 'payment_changed' && (
+                    <p className="text-xs text-muted">
+                      {activity.after?.paid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                    </p>
+                  )}
+                  <p className="mt-0.5 text-[11px] text-muted">
+                    {format(new Date(activity.createdAt), 'HH:mm dd/MM/yyyy', { locale: vi })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </BottomSheet>
 
       <ConfirmDialog

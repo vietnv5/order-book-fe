@@ -9,3 +9,4 @@ export * from './customer';
 export * from './product';
 export * from './shipper';
 export * from './shop';
+export * from './orderActivity';

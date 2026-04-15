@@ -14,6 +14,7 @@ import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Order, DeliveryStatus } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
+import { logOrderActivity } from './orderActivities';
 
 export const subscribeOrders = (
   shopId: string,
@@ -48,21 +49,38 @@ export const getOrder = async (shopId: string, uuid: string): Promise<Order | nu
 };
 
 /** Auto-promote deliveryStatus to 'assigned' when shipperId is set and status is 'pending' */
-function resolveDeliveryStatus(shipperId: string | undefined, deliveryStatus: DeliveryStatus): DeliveryStatus {
+function resolveDeliveryStatus(
+  shipperId: string | undefined,
+  deliveryStatus: DeliveryStatus,
+): DeliveryStatus {
   if (shipperId && deliveryStatus === 'pending') return 'assigned';
   return deliveryStatus;
 }
 
-export const createOrder = async (shopId: string, data: Omit<Order, 'uuid' | 'createdAt'>): Promise<Order> => {
+export const createOrder = async (
+  shopId: string,
+  data: Omit<Order, 'uuid' | 'createdAt'>,
+): Promise<Order> => {
   const uuid = uuidv7();
   const now = new Date().toISOString();
   const deliveryStatus = resolveDeliveryStatus(data.shipperId, data.deliveryStatus);
-  const order: Order = { ...data, uuid, createdAt: now, updatedAt: now, statAt: data.statAt ?? now, deleted: false, deliveryStatus };
-  await setDoc(doc(db, 'shops', shopId, 'orders', uuid), stripUndefined(order as unknown as Record<string, unknown>));
+  const order: Order = {
+    ...data, uuid, createdAt: now, updatedAt: now,
+    statAt: data.statAt ?? now, deleted: false, deliveryStatus,
+  };
+  await setDoc(
+    doc(db, 'shops', shopId, 'orders', uuid),
+    stripUndefined(order as unknown as Record<string, unknown>),
+  );
+  logOrderActivity(shopId, { orderId: uuid, action: 'created', after: order }).catch(console.warn);
   return order;
 };
 
-export const updateOrder = async (shopId: string, uuid: string, data: Partial<Order>): Promise<void> => {
+export const updateOrder = async (
+  shopId: string,
+  uuid: string,
+  data: Partial<Order>,
+): Promise<void> => {
   const deliveryStatus = data.deliveryStatus != null
     ? resolveDeliveryStatus(data.shipperId, data.deliveryStatus)
     : undefined;
@@ -72,6 +90,13 @@ export const updateOrder = async (shopId: string, uuid: string, data: Partial<Or
     updatedAt: new Date().toISOString(),
   } as Record<string, unknown>);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
+
+  // Determine which action best describes this update
+  const action =
+    data.deliveryStatus != null ? 'status_changed'
+    : data.paid != null ? 'payment_changed'
+    : 'updated';
+  logOrderActivity(shopId, { orderId: uuid, action, after: data }).catch(console.warn);
 };
 
 export const deleteOrder = async (shopId: string, uuid: string): Promise<void> => {
@@ -79,6 +104,7 @@ export const deleteOrder = async (shopId: string, uuid: string): Promise<void> =
     deleted: true,
     updatedAt: new Date().toISOString(),
   });
+  logOrderActivity(shopId, { orderId: uuid, action: 'deleted' }).catch(console.warn);
 };
 
 export const getOrdersOnce = async (shopId: string): Promise<Order[]> => {
