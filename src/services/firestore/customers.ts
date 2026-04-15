@@ -7,7 +7,6 @@ import {
   doc,
   onSnapshot,
   Unsubscribe,
-  where,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
@@ -63,7 +62,8 @@ export const deleteCustomer = async (shopId: string, uuid: string): Promise<void
 
 /**
  * Find an existing customer by name (+ optional phone), or create a new one.
- * Matching priority: name + phone (if phone provided), else name only.
+ * Name matching is case-insensitive to stay consistent with the duplicate check
+ * in the customers UI. Matching priority: name + phone (if phone provided), else name only.
  */
 export const findOrCreateCustomer = async (
   shopId: string,
@@ -72,19 +72,18 @@ export const findOrCreateCustomer = async (
 ): Promise<Customer> => {
   const trimmedName = name.trim();
   const trimmedPhone = phone?.trim();
+  const nameLower = trimmedName.toLowerCase();
 
-  const snap = await getDocs(
-    query(getShopCollection(shopId, 'customers'), where('name', '==', trimmedName)),
-  );
-  const existing = snap.docs
-    .map((d) => ({ uuid: d.id, ...d.data() }) as Customer)
-    .filter((c) => !c.deleted);
+  // Fetch all customers and do a case-insensitive in-memory match to avoid
+  // Firestore's case-sensitive equality operator producing false negatives.
+  const allCustomers = await getCustomers(shopId);
+  const candidates = allCustomers.filter((c) => c.name.toLowerCase() === nameLower);
 
   if (trimmedPhone) {
-    const byPhone = existing.find((c) => c.sdt === trimmedPhone);
+    const byPhone = candidates.find((c) => c.sdt === trimmedPhone);
     if (byPhone) return byPhone;
-  } else if (existing.length > 0) {
-    return existing[0];
+  } else if (candidates.length > 0) {
+    return candidates[0];
   }
 
   // Not found — create new

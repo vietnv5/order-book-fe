@@ -37,6 +37,8 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [totalAmountInput, setTotalAmountInput] = useState(String(initial?.totalAmount ?? ''));
+  // true = keep auto-syncing from items; set to false when user manually edits the field
+  const [totalAutoSync, setTotalAutoSync] = useState(!initial?.totalAmount);
 
   // Auto-calculate total when all items have prices set
   const computedTotal = useMemo(
@@ -46,10 +48,10 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
   const allItemsPriced = items.length > 0 && items.every((i) => (i.sellPrice || 0) > 0);
 
   useEffect(() => {
-    if (allItemsPriced) {
+    if (allItemsPriced && totalAutoSync) {
       setTotalAmountInput(String(computedTotal));
     }
-  }, [computedTotal, allItemsPriced]);
+  }, [computedTotal, allItemsPriced, totalAutoSync]);
 
   const handleCustomerSelect = (c: { uuid: string; name: string; sdt?: string; address?: string }) => {
     setCustomerId(c.uuid);
@@ -255,7 +257,7 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
       <div>
         <label htmlFor="total-amount" className="mb-1.5 block text-sm font-medium text-text">
           Tổng tiền hàng
-          {allItemsPriced && (
+          {allItemsPriced && totalAutoSync && (
             <span className="ml-1.5 text-xs font-normal text-success">● tự tính từ sản phẩm</span>
           )}
         </label>
@@ -267,7 +269,10 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
           className="input-field"
           placeholder="0"
           value={totalAmountInput}
-          onChange={(e) => setTotalAmountInput(e.target.value)}
+          onChange={(e) => {
+            setTotalAmountInput(e.target.value);
+            setTotalAutoSync(false);
+          }}
         />
       </div>
 

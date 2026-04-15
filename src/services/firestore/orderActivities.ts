@@ -7,7 +7,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { uuidv7 } from 'uuidv7';
-import { db } from '@/config/firebase';
+import { auth, db } from '@/config/firebase';
 import { OrderActivity } from '@/types/orderActivity';
 import { getShopCollection, stripUndefined } from './base';
 
@@ -17,11 +17,16 @@ import { getShopCollection, stripUndefined } from './base';
  */
 export const logOrderActivity = async (
   shopId: string,
-  activity: Omit<OrderActivity, 'uuid' | 'createdAt'>,
+  activity: Omit<OrderActivity, 'uuid' | 'createdAt' | 'createdBy'>,
 ): Promise<void> => {
   const uuid = uuidv7();
   const now = new Date().toISOString();
-  const entry: OrderActivity = { ...activity, uuid, createdAt: now };
+  const entry: OrderActivity = {
+    ...activity,
+    uuid,
+    createdAt: now,
+    createdBy: auth.currentUser?.uid,
+  };
   await setDoc(
     doc(db, 'shops', shopId, 'order_activities', uuid),
     stripUndefined(entry as unknown as Record<string, unknown>),

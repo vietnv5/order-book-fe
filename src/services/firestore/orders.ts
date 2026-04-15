@@ -81,9 +81,16 @@ export const updateOrder = async (
   uuid: string,
   data: Partial<Order>,
 ): Promise<void> => {
-  const deliveryStatus = data.deliveryStatus != null
-    ? resolveDeliveryStatus(data.shipperId, data.deliveryStatus)
-    : undefined;
+  // Auto-promote to 'assigned' only when shipperId is being explicitly set
+  // and the caller is not also changing deliveryStatus (respect explicit user choice).
+  let deliveryStatus = data.deliveryStatus;
+  if (data.shipperId !== undefined && data.deliveryStatus == null) {
+    const current = await getOrder(shopId, uuid);
+    if (current) {
+      deliveryStatus = resolveDeliveryStatus(data.shipperId, current.deliveryStatus);
+    }
+  }
+
   const payload = stripUndefined({
     ...data,
     ...(deliveryStatus !== undefined ? { deliveryStatus } : {}),

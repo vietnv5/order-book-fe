@@ -28,12 +28,16 @@ export default function CustomersPage() {
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [statsMap, setStatsMap] = useState<Map<string, CustomerStatistics>>(new Map());
   const [statsLoading, setStatsLoading] = useState(false);
+  const [statsTruncated, setStatsTruncated] = useState(false);
 
   useEffect(() => {
     if (!shopId) return;
     setStatsLoading(true);
     computeCustomerStats(shopId)
-      .then(setStatsMap)
+      .then(({ statsMap: map, truncated }) => {
+        setStatsMap(map);
+        setStatsTruncated(truncated);
+      })
       .finally(() => setStatsLoading(false));
   }, [shopId]);
 
@@ -102,6 +106,11 @@ export default function CustomersPage() {
       ) : (
         <div className="flex flex-col gap-3 px-4 pb-4">
           <p className="text-xs text-muted">{filtered.length} khách hàng</p>
+          {statsTruncated && (
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+              Thống kê chỉ tính từ 1.000 đơn gần nhất — kết quả có thể chưa đầy đủ.
+            </p>
+          )}
           {filtered.map((customer) => {
             const stats = statsMap.get(customer.uuid);
             return (
