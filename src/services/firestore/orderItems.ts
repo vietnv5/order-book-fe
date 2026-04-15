@@ -9,6 +9,8 @@ import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { OrderItem } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
+import { logOrderActivity } from './orderActivities';
+import { SimpleItem, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
 
 export const getOrderItems = async (shopId: string, orderId: string): Promise<OrderItem[]> => {
   const snap = await getDocs(
@@ -45,5 +47,23 @@ export const saveOrderItems = async (
   }
 
   await batch.commit();
+
+  const toSimple = (arr: Array<{ productName?: string; quantity: number; unit?: string; sellPrice?: number }>): SimpleItem[] =>
+    arr.map((i) => ({ productName: i.productName ?? '', quantity: i.quantity, unit: i.unit, sellPrice: i.sellPrice ?? 0 }));
+
+  const itemsBefore = toSimple(existingItems);
+  const itemsAfter = toSimple(saved);
+  const description = `${itemsBefore.length} → ${itemsAfter.length} sản phẩm`;
+
+  logOrderActivity(shopId, {
+    module: 'orders',
+    action: 'items_changed',
+    targetType: 'order_items',
+    targetUuid: orderId,
+    title: ORDER_ACTIVITY_LABELS['items_changed'],
+    description,
+    data: { itemsBefore, itemsAfter },
+  }).catch(console.warn);
+
   return saved;
 };

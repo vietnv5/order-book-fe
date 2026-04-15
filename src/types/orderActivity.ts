@@ -1,20 +1,31 @@
-import { Order } from './order';
-
 export type OrderActivityAction =
   | 'created'
   | 'updated'
   | 'status_changed'
   | 'payment_changed'
-  | 'deleted';
+  | 'deleted'
+  | 'items_changed';
 
+export interface SimpleItem {
+  productName: string;
+  quantity: number;
+  unit?: string;
+  sellPrice: number;
+}
+
+/** Matches the Flutter ActivityLogModel schema */
 export interface OrderActivity {
   uuid: string;
-  orderId: string;
+  module: string;         // 'orders'
   action: OrderActivityAction;
-  before?: Partial<Order>;
-  after?: Partial<Order>;
+  targetType: string;     // 'order' | 'order_items'
+  targetUuid: string;     // orderId
+  title: string;          // human-readable label
+  description?: string;   // human-readable detail (e.g. "Chờ → Đã giao")
+  data?: Record<string, unknown>; // before/after/items payload
+  actor?: string;         // auth.currentUser?.uid
   createdAt: string;
-  createdBy?: string;
+  updatedAt: string;
 }
 
 export const ORDER_ACTIVITY_LABELS: Record<OrderActivityAction, string> = {
@@ -23,4 +34,5 @@ export const ORDER_ACTIVITY_LABELS: Record<OrderActivityAction, string> = {
   status_changed: 'Thay đổi trạng thái',
   payment_changed: 'Thay đổi thanh toán',
   deleted: 'Xóa đơn hàng',
+  items_changed: 'Cập nhật sản phẩm',
 };

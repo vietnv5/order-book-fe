@@ -164,7 +164,7 @@ export default function OrderDetailPage() {
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
             <p className="text-xs text-muted">
               {order.statAt || order.createdAt
-                ? format(new Date(order.statAt ?? order.createdAt), 'HH:mm:ss dd/MM/yyyy', { locale: vi })
+                ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM/yyyy', { locale: vi })
                 : ''}
             </p>
             <button
@@ -277,13 +277,14 @@ export default function OrderDetailPage() {
           <div className="flex flex-col gap-0 pb-4">
             {activities.map((activity, idx) => (
               <div key={activity.uuid} className="flex gap-3">
-                {/* Timeline line */}
+                {/* Timeline dot + connector */}
                 <div className="flex flex-col items-center">
                   <div className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${
                     activity.action === 'created' ? 'bg-emerald-500'
                     : activity.action === 'deleted' ? 'bg-danger'
                     : activity.action === 'status_changed' ? 'bg-primary'
                     : activity.action === 'payment_changed' ? 'bg-amber-500'
+                    : activity.action === 'items_changed' ? 'bg-violet-500'
                     : 'bg-slate-400'
                   }`} />
                   {idx < activities.length - 1 && (
@@ -292,18 +293,25 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="pb-4 min-w-0 flex-1">
                   <p className="text-sm font-medium text-text">{ORDER_ACTIVITY_LABELS[activity.action]}</p>
-                  {activity.action === 'status_changed' && activity.after?.deliveryStatus && (
-                    <p className="text-xs text-muted">
-                      {DELIVERY_STATUS_LABELS[activity.after.deliveryStatus]}
-                    </p>
+
+                  {/* description covers status_changed "Chờ → Đã giao", payment_changed, items count */}
+                  {activity.description && (
+                    <p className="text-xs text-muted mt-0.5">{activity.description}</p>
                   )}
-                  {activity.action === 'payment_changed' && (
-                    <p className="text-xs text-muted">
-                      {activity.after?.paid ? 'Đã thanh toán' : 'Chưa thanh toán'}
-                    </p>
-                  )}
+
+                  {/* items_changed: list after-items when description alone isn't enough */}
+                  {activity.action === 'items_changed' && (() => {
+                    const afterItems = (activity.data?.itemsAfter as Array<{ productName: string; quantity: number }> | undefined);
+                    if (!afterItems?.length) return null;
+                    return (
+                      <p className="text-xs text-muted mt-0.5">
+                        {afterItems.map((i) => `${i.productName} ×${i.quantity}`).join(', ')}
+                      </p>
+                    );
+                  })()}
+
                   <p className="mt-0.5 text-[11px] text-muted">
-                    {format(new Date(activity.createdAt), 'HH:mm:ss dd/MM/yyyy', { locale: vi })}
+                    {format(new Date(activity.createdAt), 'HH:mm dd/MM/yyyy', { locale: vi })}
                   </p>
                 </div>
               </div>

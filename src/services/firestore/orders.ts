@@ -13,8 +13,10 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Order, DeliveryStatus } from '@/types';
+import { DELIVERY_STATUS_LABELS } from '@/types';
 import { getShopCollection, stripUndefined } from './base';
 import { logOrderActivity } from './orderActivities';
+import { ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
 
 export const subscribeOrders = (
   shopId: string,
@@ -72,7 +74,14 @@ export const createOrder = async (
     doc(db, 'shops', shopId, 'orders', uuid),
     stripUndefined(order as unknown as Record<string, unknown>),
   );
-  logOrderActivity(shopId, { orderId: uuid, action: 'created', after: order }).catch(console.warn);
+  logOrderActivity(shopId, {
+    module: 'orders',
+    action: 'created',
+    targetType: 'order',
+    targetUuid: uuid,
+    title: ORDER_ACTIVITY_LABELS['created'],
+    data: { after: order },
+  }).catch(console.warn);
   return order;
 };
 
@@ -81,14 +90,12 @@ export const updateOrder = async (
   uuid: string,
   data: Partial<Order>,
 ): Promise<void> => {
-  // Auto-promote to 'assigned' only when shipperId is being explicitly set
-  // and the caller is not also changing deliveryStatus (respect explicit user choice).
+  // Always fetch current state — needed for before snapshot and deliveryStatus resolution
+  const current = await getOrder(shopId, uuid);
+
   let deliveryStatus = data.deliveryStatus;
-  if (data.shipperId !== undefined && data.deliveryStatus == null) {
-    const current = await getOrder(shopId, uuid);
-    if (current) {
-      deliveryStatus = resolveDeliveryStatus(data.shipperId, current.deliveryStatus);
-    }
+  if (data.shipperId !== undefined && data.deliveryStatus == null && current) {
+    deliveryStatus = resolveDeliveryStatus(data.shipperId, current.deliveryStatus);
   }
 
   const payload = stripUndefined({
@@ -98,20 +105,47 @@ export const updateOrder = async (
   } as Record<string, unknown>);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
 
-  // Determine which action best describes this update
   const action =
     data.deliveryStatus != null ? 'status_changed'
     : data.paid != null ? 'payment_changed'
     : 'updated';
-  logOrderActivity(shopId, { orderId: uuid, action, after: data }).catch(console.warn);
+
+  // Build human-readable description for before → after
+  let description: string | undefined;
+  if (action === 'status_changed' && current?.deliveryStatus && data.deliveryStatus) {
+    description = `${DELIVERY_STATUS_LABELS[current.deliveryStatus]} → ${DELIVERY_STATUS_LABELS[data.deliveryStatus]}`;
+  } else if (action === 'payment_changed' && current != null) {
+    description = `${current.paid ? 'Đã thanh toán' : 'Chưa TT'} → ${data.paid ? 'Đã thanh toán' : 'Chưa TT'}`;
+  }
+
+  logOrderActivity(shopId, {
+    module: 'orders',
+    action,
+    targetType: 'order',
+    targetUuid: uuid,
+    title: ORDER_ACTIVITY_LABELS[action],
+    description,
+    data: {
+      before: current ?? undefined,
+      after: { ...current, ...data } as Partial<Order>,
+    },
+  }).catch(console.warn);
 };
 
 export const deleteOrder = async (shopId: string, uuid: string): Promise<void> => {
+  const current = await getOrder(shopId, uuid);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), {
     deleted: true,
     updatedAt: new Date().toISOString(),
   });
-  logOrderActivity(shopId, { orderId: uuid, action: 'deleted' }).catch(console.warn);
+  logOrderActivity(shopId, {
+    module: 'orders',
+    action: 'deleted',
+    targetType: 'order',
+    targetUuid: uuid,
+    title: ORDER_ACTIVITY_LABELS['deleted'],
+    data: { before: current ?? undefined },
+  }).catch(console.warn);
 };
 
 export const getOrdersOnce = async (shopId: string): Promise<Order[]> => {

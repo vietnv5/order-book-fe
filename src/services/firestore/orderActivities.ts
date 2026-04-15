@@ -13,11 +13,12 @@ import { getShopCollection, stripUndefined } from './base';
 
 /**
  * Write an activity log entry for an order.
+ * Matches the Flutter ActivityLogModel schema.
  * Call with .catch(console.warn) to avoid blocking the main operation.
  */
 export const logOrderActivity = async (
   shopId: string,
-  activity: Omit<OrderActivity, 'uuid' | 'createdAt' | 'createdBy'>,
+  activity: Omit<OrderActivity, 'uuid' | 'createdAt' | 'updatedAt' | 'actor'>,
 ): Promise<void> => {
   const uuid = uuidv7();
   const now = new Date().toISOString();
@@ -25,7 +26,8 @@ export const logOrderActivity = async (
     ...activity,
     uuid,
     createdAt: now,
-    createdBy: auth.currentUser?.uid,
+    updatedAt: now,
+    actor: auth.currentUser?.uid,
   };
   await setDoc(
     doc(db, 'shops', shopId, 'order_activities', uuid),
@@ -43,7 +45,7 @@ export const getOrderActivities = async (
   const snap = await getDocs(
     query(
       getShopCollection(shopId, 'order_activities'),
-      where('orderId', '==', orderId),
+      where('targetUuid', '==', orderId),
       orderBy('createdAt', 'desc'),
     ),
   );
