@@ -7,6 +7,8 @@ import AppHeader from '@/components/AppHeader';
 import SkeletonList from '@/components/SkeletonList';
 import StatusBadge from '@/components/StatusBadge';
 import ShopSwitcherSheet from '@/components/ShopSwitcherSheet';
+import TopCustomers from '@/components/dashboard/TopCustomers';
+import TopProducts from '@/components/dashboard/TopProducts';
 import { useShop } from '@/contexts/ShopContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { signOut } from '@/services/auth';
@@ -28,6 +30,9 @@ function getThirtyDaysAgo() {
   return d.toISOString().split('T')[0];
 }
 
+const TABS = ['Tổng quan', 'Top KH', 'Top SP'] as const;
+type TabIndex = 0 | 1 | 2;
+
 export default function DashboardPage() {
   const { shop, shopId, role, refreshShop } = useShop();
   const { user } = useAuth();
@@ -43,44 +48,44 @@ export default function DashboardPage() {
   const [editShopNameValue, setEditShopNameValue] = useState('');
   const [editShopSaving, setEditShopSaving] = useState(false);
   const [editShopError, setEditShopError] = useState('');
+  const [activeTab, setActiveTab] = useState<TabIndex>(0);
 
   useEffect(() => {
     if (!shopId) { setLoading(false); return; }
-    const unsub = subscribeOrders(shopId, (data) => {
-      setAllOrders(data);
-      setLoading(false);
-    });
+    const unsub = subscribeOrders(shopId, (data) => { setAllOrders(data); setLoading(false); });
     return unsub;
   }, [shopId]);
 
   const handleSaveShopName = async () => {
     if (!shopId || !editShopNameValue.trim()) return;
-    setEditShopSaving(true);
-    setEditShopError('');
+    setEditShopSaving(true); setEditShopError('');
     try {
       await updateShopName(shopId, editShopNameValue);
       await refreshShop();
       setShowEditShopName(false);
     } catch (e: unknown) {
       setEditShopError(e instanceof Error ? e.message : 'Không thể lưu tên shop');
-    } finally {
-      setEditShopSaving(false);
-    }
+    } finally { setEditShopSaving(false); }
   };
 
-  const rangeOrders = useMemo(() => {
-    return allOrders.filter((o) => {
+  const rangeOrders = useMemo(() =>
+    allOrders.filter((o) => {
       const d = (o.statAt ?? o.createdAt ?? '').substring(0, 10);
       return d >= dateFrom && d <= dateTo;
-    });
-  }, [allOrders, dateFrom, dateTo]);
+    }),
+  [allOrders, dateFrom, dateTo]);
+
+  const rangeOrderIds = useMemo(() => new Set(rangeOrders.map((o) => o.uuid)), [rangeOrders]);
 
   const totalCount    = rangeOrders.length;
   const pendingCount  = rangeOrders.filter((o) => o.deliveryStatus === 'pending').length;
   const shippingCount = rangeOrders.filter((o) => o.deliveryStatus === 'shipping' || o.deliveryStatus === 'assigned').length;
-  const revenue       = rangeOrders
-    .filter((o) => o.deliveryStatus === 'completed')
-    .reduce((sum, o) => sum + (o.totalAmount ?? 0), 0);
+  const revenue       = rangeOrders.filter((o) => o.deliveryStatus === 'completed').reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+
+  const totalPaid        = rangeOrders.filter((o) => o.paid).reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+  const totalDebt        = rangeOrders.filter((o) => !o.paid).reduce((s, o) => s + (o.totalAmount ?? 0), 0);
+  const totalDeliveryFee = rangeOrders.reduce((s, o) => s + (o.deliveryFee ?? 0), 0);
+  const totalProfit      = rangeOrders.reduce((s, o) => s + (o.profit ?? 0), 0);
 
   const isToday = dateFrom === today && dateTo === today;
 
@@ -111,6 +116,13 @@ export default function DashboardPage() {
     },
   ];
 
+  const financeCards = [
+    { label: 'Đã thanh toán', value: formatCurrency(totalPaid), textColor: 'text-emerald-600' },
+    { label: 'Còn nợ',        value: formatCurrency(totalDebt),  textColor: totalDebt > 0 ? 'text-danger' : 'text-muted' },
+    { label: 'Phí giao',      value: formatCurrency(totalDeliveryFee), textColor: 'text-slate-600' },
+    { label: 'Lợi nhuận',    value: formatCurrency(totalProfit),     textColor: 'text-blue-600' },
+  ];
+
   return (
     <DefaultLayout>
       <AppHeader
@@ -121,13 +133,9 @@ export default function DashboardPage() {
               onClick={() => setShowUserMenu((v) => !v)}
               className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-primary/10"
             >
-              {user?.photoURL ? (
-                <img src={user.photoURL} alt="" className="h-9 w-9 rounded-full object-cover" />
-              ) : (
-                <span className="text-sm font-semibold text-primary">
-                  {user?.displayName?.[0] ?? 'U'}
-                </span>
-              )}
+              {user?.photoURL
+                ? <img src={user.photoURL} alt="" className="h-9 w-9 rounded-full object-cover" />
+                : <span className="text-sm font-semibold text-primary">{user?.displayName?.[0] ?? 'U'}</span>}
             </button>
             {showUserMenu && (
               <>
@@ -135,59 +143,29 @@ export default function DashboardPage() {
                 <div className="absolute right-0 top-11 z-50 w-56 rounded-2xl bg-surface p-2 shadow-xl">
                   <p className="px-3 py-2 text-xs text-muted truncate">{user?.email}</p>
                   <hr className="border-border my-1" />
-                  <button
-                    onClick={() => { setShowShopSwitcher(true); setShowUserMenu(false); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
-                  >
-                    <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
+                  <button onClick={() => { setShowShopSwitcher(true); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700">
+                    <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
                     Chuyển / tham gia shop
                   </button>
                   {role === 'owner' && (
                     <>
-                      <button
-                        onClick={() => {
-                          setEditShopNameValue(shop?.name ?? '');
-                          setEditShopError('');
-                          setShowEditShopName(true);
-                          setShowUserMenu(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
-                      >
-                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                      <button onClick={() => { setEditShopNameValue(shop?.name ?? ''); setEditShopError(''); setShowEditShopName(true); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700">
+                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                         Đổi tên shop
                       </button>
-                      <button
-                        onClick={() => { navigate('/shop/members'); setShowUserMenu(false); }}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
-                      >
-                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
+                      <button onClick={() => { navigate('/shop/members'); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700">
+                        <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                         Quản lý thành viên
                       </button>
                     </>
                   )}
-                  <button
-                    onClick={() => { navigate('/shippers'); setShowUserMenu(false); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700"
-                  >
-                    <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                    </svg>
+                  <button onClick={() => { navigate('/shippers'); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-text transition-colors active:bg-gray-100 dark:active:bg-slate-700">
+                    <svg className="h-4 w-4 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
                     Quản lý tài xế
                   </button>
                   <hr className="border-border my-1" />
-                  <button
-                    onClick={async () => { await signOut(); }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-danger"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                  <button onClick={async () => { await signOut(); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-danger">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     Đăng xuất
                   </button>
                 </div>
@@ -213,10 +191,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               {!isToday && (
-                <button
-                  onClick={() => { setDateFrom(today); setDateTo(today); }}
-                  className="text-xs font-medium text-primary"
-                >
+                <button onClick={() => { setDateFrom(today); setDateTo(today); }} className="text-xs font-medium text-primary">
                   Hôm nay
                 </button>
               )}
@@ -224,124 +199,147 @@ export default function DashboardPage() {
                 onClick={() => setShowDateFilter((v) => !v)}
                 aria-label="Lọc theo ngày"
                 className={`flex h-8 w-8 items-center justify-center rounded-xl border-[1.5px] transition-all ${
-                  showDateFilter || !isToday
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-surface text-muted'
+                  showDateFilter || !isToday ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-surface text-muted'
                 }`}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
               </button>
             </div>
           </div>
-
           {showDateFilter && (
             <div className="mb-3 flex gap-2">
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-muted">Từ ngày</label>
-                <input
-                  type="date"
-                  className="input-field text-sm"
-                  style={{ padding: '8px 12px' }}
-                  value={dateFrom}
-                  max={dateTo}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
+                <input type="date" className="input-field text-sm" style={{ padding: '8px 12px' }} value={dateFrom} max={dateTo} onChange={(e) => setDateFrom(e.target.value)} />
               </div>
               <div className="flex-1">
                 <label className="mb-1 block text-xs font-medium text-muted">Đến ngày</label>
-                <input
-                  type="date"
-                  className="input-field text-sm"
-                  style={{ padding: '8px 12px' }}
-                  value={dateTo}
-                  min={dateFrom}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
+                <input type="date" className="input-field text-sm" style={{ padding: '8px 12px' }} value={dateTo} min={dateFrom} onChange={(e) => setDateTo(e.target.value)} />
               </div>
             </div>
           )}
         </div>
 
-        {/* Stats grid */}
-        <div className="mb-5 grid grid-cols-2 gap-3">
-          {statCards.map((card) => (
-            <div key={card.label} className="rounded-2xl bg-surface p-4 shadow-card">
-              <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl ${card.color}`}>
-                {card.icon}
-              </div>
-              <p className="text-2xl font-bold text-text">{card.value}</p>
-              <p className="text-xs text-muted mt-0.5">{card.label}</p>
-            </div>
+        {/* Tab switcher */}
+        <div className="mb-4 flex gap-1 rounded-xl bg-gray-100 p-1 dark:bg-slate-800">
+          {TABS.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => setActiveTab(i as TabIndex)}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-all ${
+                activeTab === i ? 'bg-white text-text shadow dark:bg-slate-700' : 'text-muted'
+              }`}
+            >
+              {label}
+            </button>
           ))}
         </div>
 
-        {/* Recent orders */}
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-text">
-            {isToday ? 'Đơn hàng hôm nay' : 'Đơn hàng trong kỳ'}
-          </h2>
-          <button onClick={() => navigate('/orders')} className="text-xs font-medium text-primary">
-            Xem tất cả
-          </button>
-        </div>
-
-        {loading ? (
-          <SkeletonList count={3} />
-        ) : rangeOrders.length === 0 ? (
-          <div className="rounded-2xl bg-surface p-8 text-center shadow-card">
-            <svg className="mx-auto mb-2 h-10 w-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-sm text-muted">
-              {isToday ? 'Chưa có đơn hàng hôm nay' : 'Không có đơn hàng trong khoảng này'}
-            </p>
-            {isToday && (
-              <button onClick={() => navigate('/orders/new')} className="btn-primary mx-auto mt-4 w-auto px-6">
-                Tạo đơn đầu tiên
-              </button>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3 pb-4">
-            {rangeOrders.slice(0, 10).map((order) => (
-              <button
-                key={order.uuid}
-                onClick={() => navigate(`/orders/${order.uuid}`)}
-                className="flex items-start justify-between rounded-2xl bg-surface p-4 shadow-card text-left transition-all active:scale-[0.98]"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-text truncate">{order.customerName}</p>
-                  {order.customerPhone && (
-                    <p className="mt-0.5 text-xs text-muted">{order.customerPhone}</p>
-                  )}
-                  <div className="mt-2 flex items-center gap-2">
-                    <StatusBadge status={order.deliveryStatus} size="sm" />
-                    {order.paid && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                        Đã TT
-                      </span>
-                    )}
+        {/* ===== Tab 0: Overview ===== */}
+        {activeTab === 0 && (
+          <>
+            {/* Main stat cards */}
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              {statCards.map((card) => (
+                <div key={card.label} className="rounded-2xl bg-surface p-4 shadow-card">
+                  <div className={`mb-2 inline-flex h-9 w-9 items-center justify-center rounded-xl ${card.color}`}>
+                    {card.icon}
                   </div>
+                  <p className="text-2xl font-bold text-text">{card.value}</p>
+                  <p className="text-xs text-muted mt-0.5">{card.label}</p>
                 </div>
-                <div className="ml-3 text-right shrink-0">
-                  {order.totalAmount != null && (
-                    <p className="font-semibold text-text text-sm">
-                      {order.totalAmount.toLocaleString('vi')}đ
-                    </p>
-                  )}
-                  <p className="mt-0.5 text-[11px] text-muted">
-                    {order.statAt || order.createdAt
-                      ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM', { locale: vi })
-                      : ''}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Finance breakdown */}
+            <div className="mb-5">
+              <h3 className="mb-2 text-[13px] font-semibold text-muted">Tài chính</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {financeCards.map((card) => (
+                  <div key={card.label} className="rounded-2xl bg-surface p-3 shadow-card">
+                    <p className="text-[11px] text-muted">{card.label}</p>
+                    <p className={`mt-0.5 text-xl font-bold ${card.textColor}`}>{card.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent orders */}
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[15px] font-semibold text-text">
+                {isToday ? 'Đơn hàng hôm nay' : 'Đơn hàng trong kỳ'}
+              </h2>
+              <button onClick={() => navigate('/orders')} className="text-xs font-medium text-primary">Xem tất cả</button>
+            </div>
+
+            {loading ? (
+              <SkeletonList count={3} />
+            ) : rangeOrders.length === 0 ? (
+              <div className="rounded-2xl bg-surface p-8 text-center shadow-card">
+                <svg className="mx-auto mb-2 h-10 w-10 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p className="text-sm text-muted">
+                  {isToday ? 'Chưa có đơn hàng hôm nay' : 'Không có đơn hàng trong khoảng này'}
+                </p>
+                {isToday && (
+                  <button onClick={() => navigate('/orders/new')} className="btn-primary mx-auto mt-4 w-auto px-6">
+                    Tạo đơn đầu tiên
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3 pb-4">
+                {rangeOrders.slice(0, 10).map((order) => (
+                  <button
+                    key={order.uuid}
+                    onClick={() => navigate(`/orders/${order.uuid}`)}
+                    className="flex items-start justify-between rounded-2xl bg-surface p-4 shadow-card text-left transition-all active:scale-[0.98]"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-text truncate">{order.customerName}</p>
+                      {order.customerPhone && <p className="mt-0.5 text-xs text-muted">{order.customerPhone}</p>}
+                      <div className="mt-2 flex items-center gap-2">
+                        <StatusBadge status={order.deliveryStatus} size="sm" />
+                        {order.paid && (
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Đã TT</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-3 text-right shrink-0">
+                      {order.totalAmount != null && (
+                        <p className="font-semibold text-text text-sm">{order.totalAmount.toLocaleString('vi')}đ</p>
+                      )}
+                      <p className="mt-0.5 text-[11px] text-muted">
+                        {order.statAt || order.createdAt
+                          ? format(new Date(order.statAt ?? order.createdAt), 'dd/MM', { locale: vi })
+                          : ''}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ===== Tab 1: Top Customers ===== */}
+        {activeTab === 1 && (
+          <>
+            <p className="mb-3 text-[13px] text-muted">Top 10 khách hàng theo doanh thu trong kỳ</p>
+            <TopCustomers orders={rangeOrders} />
+          </>
+        )}
+
+        {/* ===== Tab 2: Top Products ===== */}
+        {activeTab === 2 && shopId && (
+          <>
+            <p className="mb-3 text-[13px] text-muted">Top 10 sản phẩm theo doanh thu trong kỳ</p>
+            <TopProducts shopId={shopId} orderIds={rangeOrderIds} />
+          </>
         )}
       </div>
+
       <ShopSwitcherSheet open={showShopSwitcher} onClose={() => setShowShopSwitcher(false)} />
 
       {/* Edit shop name dialog */}
@@ -355,31 +353,15 @@ export default function DashboardPage() {
           >
             <h3 className="mb-4 text-base font-semibold text-text">Đổi tên shop</h3>
             <input
-              type="text"
-              className="input-field mb-1"
-              value={editShopNameValue}
-              maxLength={60}
-              autoFocus
+              type="text" className="input-field mb-1" value={editShopNameValue} maxLength={60} autoFocus
               onChange={(e) => setEditShopNameValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSaveShopName(); }}
               placeholder="Tên shop"
             />
-            {editShopError && (
-              <p className="mb-3 text-xs text-danger">{editShopError}</p>
-            )}
+            {editShopError && <p className="mb-3 text-xs text-danger">{editShopError}</p>}
             <div className="mt-4 flex gap-3">
-              <button
-                onClick={() => setShowEditShopName(false)}
-                className="btn-secondary flex-1"
-                disabled={editShopSaving}
-              >
-                Huỷ
-              </button>
-              <button
-                onClick={handleSaveShopName}
-                className="btn-primary flex-1"
-                disabled={editShopSaving || !editShopNameValue.trim()}
-              >
+              <button onClick={() => setShowEditShopName(false)} className="btn-secondary flex-1" disabled={editShopSaving}>Huỷ</button>
+              <button onClick={handleSaveShopName} className="btn-primary flex-1" disabled={editShopSaving || !editShopNameValue.trim()}>
                 {editShopSaving ? 'Đang lưu...' : 'Lưu'}
               </button>
             </div>
