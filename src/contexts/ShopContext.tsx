@@ -24,7 +24,7 @@ const ShopContext = createContext<ShopContextValue>({
 });
 
 export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [shop, setShop] = useState<Shop | null>(null);
   const [role, setRole] = useState<'owner' | 'editor' | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export const ShopProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  useEffect(() => { loadShop(); }, [user]);
+  useEffect(() => { if (!authLoading) loadShop(); }, [user, authLoading]);
 
   const switchShop = (s: Shop) => {
     localStorage.setItem('selectedShopId', s.shopId);
