@@ -67,6 +67,9 @@ export default function OrderCard({ order, onUpdateStatus, onUpdatePaid }: Props
           {order.customerPhone && (
             <p className="mt-0.5 text-xs text-muted">{order.customerPhone}</p>
           )}
+          {order.description && (
+            <p className="mt-1 text-xs text-muted line-clamp-2 italic">{order.description}</p>
+          )}
 
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             {/* Delivery status — tappable */}
