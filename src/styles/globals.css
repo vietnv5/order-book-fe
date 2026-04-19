@@ -31,7 +31,7 @@
   --color-muted: #64748B;
   --color-border: #E2E8F0;
   --bottom-nav-height: 64px;
-  --header-height: calc(56px + env(safe-area-inset-top, 0px));
+  --header-height: 56px;
 }
 
 .dark {
@@ -149,9 +149,14 @@ body {
 
 /* Content area with bottom nav padding */
 .main-content {
-  padding-top: var(--header-height);
+  padding-top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
   padding-bottom: calc(var(--bottom-nav-height) + 16px);
   min-height: 100vh;
+}
+
+/* Sticky element positioned just below the fixed header (accounts for notch) */
+.top-below-header {
+  top: calc(var(--header-height) + env(safe-area-inset-top, 0px));
 }
 
 /* Scrollable tabs (no scrollbar) */

@@ -83,7 +83,7 @@ export default function OrdersPage() {
       />
 
       {/* Sticky controls */}
-      <div className="sticky top-14 z-30 bg-app">
+      <div className="sticky top-below-header z-30 bg-app">
         {/* Status tabs */}
         <div className="scroll-tabs pb-2 pt-3">
           {ALL_TABS.map((tab) => (

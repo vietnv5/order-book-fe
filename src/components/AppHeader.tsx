@@ -10,10 +10,7 @@ export default function AppHeader({ title, showBack = false, rightAction }: Prop
   const navigate = useNavigate();
 
   return (
-    <header
-      className="fixed left-0 right-0 top-0 z-40 bg-surface px-4"
-      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
-    >
+    <header className="fixed left-0 right-0 top-0 z-40 bg-surface px-4 pt-safe">
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-400" />
       <div className="flex h-14 items-center">
         {showBack && (
