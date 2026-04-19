@@ -4,6 +4,7 @@ import { useProducts } from '@/hooks/useProducts';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useShippers } from '@/hooks/useShippers';
 import { findOrCreateProduct } from '@/services/firestore/products';
+import { nowGMT7 } from '@/services/firestore/base';
 import OrderItemRow, { OrderItemDraft } from './OrderItemRow';
 
 interface Props {
@@ -14,11 +15,15 @@ interface Props {
   submitLabel?: string;
 }
 
-/** Convert an ISO string to the local-time value required by datetime-local inputs (yyyy-MM-ddTHH:mm:ss). */
-function toLocalDatetimeInput(iso: string): string {
-  const d = new Date(iso);
+/** Convert a date string to the value required by datetime-local inputs (yyyy-MM-ddTHH:mm:ss).
+ *  Handles both new GMT+7 format ("YYYY-MM-DD HH:mm:ss") and legacy UTC ISO strings. */
+function toLocalDatetimeInput(dateStr: string): string {
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
+    return dateStr.replace(' ', 'T');
+  }
+  const d = new Date(new Date(dateStr).getTime() + 7 * 60 * 60 * 1000);
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
 }
 
 export default function OrderForm({ shopId, initial, initialItems, onSubmit, submitLabel = 'Lưu đơn' }: Props) {
@@ -36,7 +41,7 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
   const [paid, setPaid] = useState(initial?.paid ?? false);
   const [description, setDescription] = useState(initial?.description ?? '');
   const [statAt, setStatAt] = useState(
-    initial?.statAt ? toLocalDatetimeInput(initial.statAt) : toLocalDatetimeInput(new Date().toISOString()),
+    initial?.statAt ? toLocalDatetimeInput(initial.statAt) : nowGMT7().replace(' ', 'T'),
   );
   const [items, setItems] = useState<OrderItemDraft[]>(initialItems ?? []);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -107,7 +112,7 @@ export default function OrderForm({ shopId, initial, initialItems, onSubmit, sub
         deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
         paid,
         description: description.trim() || undefined,
-        statAt: statAt ? new Date(statAt).toISOString() : undefined,
+        statAt: statAt ? statAt.replace('T', ' ') : undefined,
         totalAmount: totalAmountInput ? Number(totalAmountInput) : undefined,
         source: initial?.source ?? 'manual',
       }, resolvedItems);

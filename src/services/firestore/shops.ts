@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 import { Shop, ShopMember } from '@/types';
+import { nowGMT7 } from './base';
 
 export const getShop = async (shopId: string): Promise<Shop | null> => {
   const snap = await getDoc(doc(db, 'shops', shopId));
@@ -25,7 +26,7 @@ export const createShop = async (
   userEmail?: string | null,
   userPhotoUrl?: string | null,
 ): Promise<Shop> => {
-  const now = new Date().toISOString();
+  const now = nowGMT7();
   const shop: Shop = {
     shopId: userId,
     name: shopName.trim(),
@@ -64,7 +65,7 @@ export const joinShop = async (
       userId,
       shopId,
       role: 'editor',
-      joinedAt: new Date().toISOString(),
+      joinedAt: nowGMT7(),
       displayName: userDisplayName ?? undefined,
       email: userEmail ?? undefined,
       photoUrl: userPhotoUrl ?? undefined,

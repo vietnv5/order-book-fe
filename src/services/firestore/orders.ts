@@ -14,7 +14,7 @@ import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { Order, DeliveryStatus } from '@/types';
 import { DELIVERY_STATUS_LABELS } from '@/types';
-import { getShopCollection, stripUndefined } from './base';
+import { getShopCollection, stripUndefined, nowGMT7 } from './base';
 import { logOrderActivity } from './orderActivities';
 import { ORDER_ACTIVITY_ACTIONS, ORDER_ACTIVITY_LABELS, CanonicalOrderActivityAction } from '@/types/orderActivity';
 
@@ -64,7 +64,7 @@ export const createOrder = async (
   data: Omit<Order, 'uuid' | 'createdAt'>,
 ): Promise<Order> => {
   const uuid = uuidv7();
-  const now = new Date().toISOString();
+  const now = nowGMT7();
   const deliveryStatus = resolveDeliveryStatus(data.shipperId, data.deliveryStatus);
   const order: Order = {
     ...data, uuid, createdAt: now, updatedAt: now,
@@ -102,7 +102,7 @@ export const updateOrder = async (
   const payload = stripUndefined({
     ...data,
     ...(deliveryStatus !== undefined ? { deliveryStatus } : {}),
-    updatedAt: new Date().toISOString(),
+    updatedAt: nowGMT7(),
   } as Record<string, unknown>);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), payload);
 
@@ -138,7 +138,7 @@ export const deleteOrder = async (shopId: string, uuid: string): Promise<void> =
   const current = await getOrder(shopId, uuid);
   await updateDoc(doc(db, 'shops', shopId, 'orders', uuid), {
     deleted: true,
-    updatedAt: new Date().toISOString(),
+    updatedAt: nowGMT7(),
   });
   logOrderActivity(shopId, {
     module: 'ORDER',
