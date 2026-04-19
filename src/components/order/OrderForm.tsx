@@ -16,14 +16,22 @@ interface Props {
 }
 
 /** Convert a date string to the value required by datetime-local inputs (yyyy-MM-ddTHH:mm:ss).
- *  Handles both new GMT+7 format ("YYYY-MM-DD HH:mm:ss") and legacy UTC ISO strings. */
+ *  Only applies GMT+7 conversion when the source is explicitly UTC (ends with Z or +00:00). */
 function toLocalDatetimeInput(dateStr: string): string {
   if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateStr)) {
     return dateStr.replace(' ', 'T');
   }
-  const d = new Date(new Date(dateStr).getTime() + 7 * 60 * 60 * 1000);
+  const isUTC = dateStr.endsWith('Z') || dateStr.includes('+00:00');
+  const d = new Date(dateStr);
+  if (isUTC) {
+    return new Intl.DateTimeFormat('sv-SE', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }).format(d).replace(' ', 'T');
+  }
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 export default function OrderForm({ shopId, initial, initialItems, onSubmit, submitLabel = 'Lưu đơn' }: Props) {
