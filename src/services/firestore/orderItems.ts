@@ -8,7 +8,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { db } from '@/config/firebase';
 import { OrderItem } from '@/types';
-import { getShopCollection, stripUndefined } from './base';
+import { getShopCollection, stripUndefined, nowGMT7 } from './base';
 import { logOrderActivity } from './orderActivities';
 import { SimpleItem, ORDER_ACTIVITY_ACTIONS, ORDER_ACTIVITY_LABELS } from '@/types/orderActivity';
 
@@ -29,7 +29,7 @@ export const saveOrderItems = async (
   existingItems: OrderItem[] = [],
 ): Promise<OrderItem[]> => {
   const batch = writeBatch(db);
-  const now = new Date().toISOString();
+  const now = nowGMT7();
 
   // Soft-delete existing items
   for (const item of existingItems) {

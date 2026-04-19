@@ -8,3 +8,10 @@ export const getShopCollection = (shopId: string, col: string): CollectionRefere
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const stripUndefined = (obj: Record<string, unknown>): Record<string, any> =>
   Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+
+/** Return current time formatted as "YYYY-MM-DD HH:mm:ss" in GMT+7 */
+export function nowGMT7(): string {
+  const d = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+}

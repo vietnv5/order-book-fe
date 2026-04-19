@@ -9,7 +9,7 @@ import {
 import { uuidv7 } from 'uuidv7';
 import { auth, db } from '@/config/firebase';
 import { OrderActivity } from '@/types/orderActivity';
-import { getShopCollection, stripUndefined } from './base';
+import { getShopCollection, stripUndefined, nowGMT7 } from './base';
 
 /**
  * Write an activity log entry for an order.
@@ -21,7 +21,7 @@ export const logOrderActivity = async (
   activity: Omit<OrderActivity, 'uuid' | 'createdAt' | 'updatedAt' | 'actor'>,
 ): Promise<void> => {
   const uuid = uuidv7();
-  const now = new Date().toISOString();
+  const now = nowGMT7();
   const entry: OrderActivity = {
     ...activity,
     uuid,
