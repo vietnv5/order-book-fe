@@ -31,7 +31,7 @@
   --color-muted: #64748B;
   --color-border: #E2E8F0;
   --bottom-nav-height: 64px;
-  --header-height: 56px;
+  --header-height: calc(56px + env(safe-area-inset-top, 0px));
 }
 
 .dark {
